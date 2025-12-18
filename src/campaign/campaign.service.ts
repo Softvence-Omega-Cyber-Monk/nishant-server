@@ -461,60 +461,61 @@ export class CampaignService {
   }
 
   // Check and update campaign status based on budget and dates
-  async checkCampaignStatus(campaignId: string) {
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { campaignId },
+ // Check and update campaign status based on budget and dates
+async checkCampaignStatus(campaignId: string) {
+  const campaign = await this.prisma.campaign.findUnique({
+    where: { campaignId },
+  });
+
+  if (!campaign || campaign.status === 'COMPLETED') {
+    return;
+  }
+
+  const now = new Date();
+  let shouldUpdate = false;
+  let newStatus: 'RUNNING' | 'PAUSED' | 'COMPLETED' = campaign.status;
+  let notificationMessage = '';
+
+  // Check if budget is exhausted
+  if (campaign.remainingSpending <= 0) {
+    newStatus = 'COMPLETED';
+    notificationMessage = `Campaign "${campaign.title}" has exhausted its budget`;
+    shouldUpdate = true;
+  }
+  // Check if end date has passed
+  else if (now > campaign.endDate) {
+    newStatus = 'COMPLETED';
+    notificationMessage = `Campaign "${campaign.title}" has ended`;
+    shouldUpdate = true;
+  }
+  // Check for low budget alert (less than 20%)
+  else if (campaign.remainingSpending < campaign.budget * 0.2) {
+    const settings = await this.prisma.notificationSettings.findUnique({
+      where: { userId: campaign.vendorId },
     });
 
-    if (!campaign || campaign.status === 'COMPLETED') {
-      return;
-    }
-
-    const now = new Date();
-    let shouldUpdate = false;
-    let newStatus = campaign.status;
-    let notificationMessage = '';
-
-    // Check if budget is exhausted
-    if (campaign.remainingSpending <= 0) {
-      newStatus = 'COMPLETED';
-      notificationMessage = `Campaign "${campaign.title}" has exhausted its budget`;
-      shouldUpdate = true;
-    }
-    // Check if end date has passed
-    else if (now > campaign.endDate) {
-      newStatus = 'COMPLETED';
-      notificationMessage = `Campaign "${campaign.title}" has ended`;
-      shouldUpdate = true;
-    }
-    // Check for low budget alert (less than 20%)
-    else if (campaign.remainingSpending < campaign.budget * 0.2) {
-      const settings = await this.prisma.notificationSettings.findUnique({
-        where: { userId: campaign.vendorId },
-      });
-
-      if (settings?.lowBudgetAlert) {
-        await this.notification.sendNotification(campaign.vendorId, {
-          type: 'LOW_BUDGET_ALERT',
-          title: 'Low Budget Alert',
-          message: `Campaign "${campaign.title}" has less than 20% budget remaining`,
-          data: { campaignId: campaign.campaignId },
-        });
-      }
-    }
-
-    if (shouldUpdate) {
-      await this.prisma.campaign.update({
-        where: { campaignId },
-        data: { status: newStatus as any },
-      });
-
+    if (settings?.lowBudgetAlert) {
       await this.notification.sendNotification(campaign.vendorId, {
-        type: 'CAMPAIGN_COMPLETED',
-        title: 'Campaign Completed',
-        message: notificationMessage,
+        type: 'LOW_BUDGET_ALERT',
+        title: 'Low Budget Alert',
+        message: `Campaign "${campaign.title}" has less than 20% budget remaining`,
         data: { campaignId: campaign.campaignId },
       });
     }
   }
+
+  if (shouldUpdate) {
+    await this.prisma.campaign.update({
+      where: { campaignId },
+      data: { status: newStatus },
+    });
+
+    await this.notification.sendNotification(campaign.vendorId, {
+      type: 'CAMPAIGN_COMPLETED',
+      title: 'Campaign Completed',
+      message: notificationMessage,
+      data: { campaignId: campaign.campaignId },
+    });
+  }
+}
 }
