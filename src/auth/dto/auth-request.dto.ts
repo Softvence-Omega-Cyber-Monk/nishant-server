@@ -48,11 +48,11 @@ export class SignUpDto {
 
   @ApiPropertyOptional({
     description: 'User role',
-    enum: ['USER', 'ADMIN'],
+    enum: ['USER', 'ADMIN', 'VENDOR'],
     default: 'USER',
   })
   @IsOptional()
-  @IsEnum(['USER', 'ADMIN'])
+  @IsEnum(['USER', 'ADMIN', 'VENDOR'])
   role?: string;
 }
 
