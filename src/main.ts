@@ -36,7 +36,7 @@ async function bootstrap() {
       'JWT-auth',
     )
     .addTag('Authentication', 'User authentication, registration, and Aadhaar verification endpoints')
-    .addServer('http://localhost:3000', 'Local development')
+    .addServer('https://nishant-server-4xry.onrender.com', 'Local development')
     .build();
 
   const document = SwaggerModule.createDocument(app, config, {
