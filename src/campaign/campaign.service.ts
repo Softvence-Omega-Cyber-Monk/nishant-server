@@ -40,13 +40,33 @@ export class CampaignService {
       }),
     );
 
-    // Create Razorpay order
+    // ==================== DEMO MODE: Using mock Razorpay order ====================
+    // Generate demo order ID
+    const demoOrderId = `order_demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const amount = dto.budget * 100; // Convert to paise
+
+    // Mock order object (comment out real API call)
+    const order = {
+      id: demoOrderId,
+      amount: amount,
+      currency: 'INR',
+      receipt: `campaign_${Date.now()}`,
+      status: 'created',
+    };
+
+    console.log('🎭 DEMO MODE: Created mock Razorpay order:', order);
+
+    // ==================== REAL MODE (COMMENTED OUT) ====================
+    // Uncomment this when you want to use real Razorpay
+    /*
     const amount = dto.budget * 100; // Convert to paise
     const order = await this.razorpay.createOrder({
       amount,
       currency: 'INR',
       receipt: `campaign_${Date.now()}`,
     });
+    */
+    // ==================== END REAL MODE ====================
 
     // Create campaign with PENDING payment status
     const campaign = await this.prisma.campaign.create({
@@ -74,26 +94,43 @@ export class CampaignService {
         amount: order.amount,
         currency: order.currency,
       },
+      demoMode: true, // Flag to indicate demo mode
+      message: '⚠️ DEMO MODE: Use the verify-payment endpoint with this order ID to activate campaign',
     };
   }
 
   async verifyPaymentAndActivateCampaign(dto: PaymentVerificationDto) {
-    // Verify signature
-    const generatedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-      .update(`${dto.razorpayOrderId}|${dto.razorpayPaymentId}`)
-      .digest('hex');
+    // ==================== DEMO MODE: Skip signature verification ====================
+    console.log('🎭 DEMO MODE: Skipping Razorpay signature verification');
+    console.log('Demo payment data:', dto);
 
-    if (generatedSignature !== dto.razorpaySignature) {
-      throw new BadRequestException('Invalid payment signature');
+    // In demo mode, we'll just check if the order ID starts with 'order_demo_'
+    const isDemoMode = dto.razorpayOrderId.startsWith('order_demo_');
+
+    if (!isDemoMode) {
+      // ==================== REAL MODE (COMMENTED OUT) ====================
+      // Uncomment this when you want to use real Razorpay verification
+      /*
+      const generatedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+        .update(`${dto.razorpayOrderId}|${dto.razorpayPaymentId}`)
+        .digest('hex');
+
+      if (generatedSignature !== dto.razorpaySignature) {
+        throw new BadRequestException('Invalid payment signature');
+      }
+      */
+      // ==================== END REAL MODE ====================
+      
+      console.log('⚠️ Non-demo order ID detected but verification skipped in demo mode');
     }
 
     // Update campaign
     const campaign = await this.prisma.campaign.update({
       where: { campaignId: dto.campaignId },
       data: {
-        razorpayPaymentId: dto.razorpayPaymentId,
-        razorpaySignature: dto.razorpaySignature,
+        razorpayPaymentId: dto.razorpayPaymentId || `pay_demo_${Date.now()}`,
+        razorpaySignature: dto.razorpaySignature || `sig_demo_${Date.now()}`,
         paymentStatus: 'SUCCESS',
         status: 'RUNNING',
       },
@@ -109,9 +146,9 @@ export class CampaignService {
         type: 'CAMPAIGN_PAYMENT',
         status: 'SUCCESS',
         razorpayOrderId: dto.razorpayOrderId,
-        razorpayPaymentId: dto.razorpayPaymentId,
-        razorpaySignature: dto.razorpaySignature,
-        description: `Payment for campaign: ${campaign.title}`,
+        razorpayPaymentId: dto.razorpayPaymentId || `pay_demo_${Date.now()}`,
+        razorpaySignature: dto.razorpaySignature || `sig_demo_${Date.now()}`,
+        description: `Payment for campaign: ${campaign.title} (DEMO MODE)`,
       },
     });
 
@@ -119,11 +156,17 @@ export class CampaignService {
     await this.notification.sendNotification(campaign.vendorId, {
       type: 'PAYMENT_SUCCESS',
       title: 'Campaign Payment Successful',
-      message: `Your campaign "${campaign.title}" is now live!`,
-      data: { campaignId: campaign.campaignId },
+      message: `Your campaign "${campaign.title}" is now live! (Demo Mode)`,
+      data: { campaignId: campaign.campaignId, demoMode: true },
     });
 
-    return campaign;
+    console.log('✅ DEMO MODE: Campaign activated successfully');
+
+    return {
+      ...campaign,
+      demoMode: true,
+      message: '✅ Campaign activated in DEMO MODE',
+    };
   }
 
   async getVendorCampaigns(vendorId: string, status?: string) {
@@ -461,61 +504,60 @@ export class CampaignService {
   }
 
   // Check and update campaign status based on budget and dates
- // Check and update campaign status based on budget and dates
-async checkCampaignStatus(campaignId: string) {
-  const campaign = await this.prisma.campaign.findUnique({
-    where: { campaignId },
-  });
-
-  if (!campaign || campaign.status === 'COMPLETED') {
-    return;
-  }
-
-  const now = new Date();
-  let shouldUpdate = false;
-  let newStatus: 'RUNNING' | 'PAUSED' | 'COMPLETED' = campaign.status;
-  let notificationMessage = '';
-
-  // Check if budget is exhausted
-  if (campaign.remainingSpending <= 0) {
-    newStatus = 'COMPLETED';
-    notificationMessage = `Campaign "${campaign.title}" has exhausted its budget`;
-    shouldUpdate = true;
-  }
-  // Check if end date has passed
-  else if (now > campaign.endDate) {
-    newStatus = 'COMPLETED';
-    notificationMessage = `Campaign "${campaign.title}" has ended`;
-    shouldUpdate = true;
-  }
-  // Check for low budget alert (less than 20%)
-  else if (campaign.remainingSpending < campaign.budget * 0.2) {
-    const settings = await this.prisma.notificationSettings.findUnique({
-      where: { userId: campaign.vendorId },
+  async checkCampaignStatus(campaignId: string) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { campaignId },
     });
 
-    if (settings?.lowBudgetAlert) {
+    if (!campaign || campaign.status === 'COMPLETED') {
+      return;
+    }
+
+    const now = new Date();
+    let shouldUpdate = false;
+    let newStatus: 'RUNNING' | 'PAUSED' | 'COMPLETED' = campaign.status;
+    let notificationMessage = '';
+
+    // Check if budget is exhausted
+    if (campaign.remainingSpending <= 0) {
+      newStatus = 'COMPLETED';
+      notificationMessage = `Campaign "${campaign.title}" has exhausted its budget`;
+      shouldUpdate = true;
+    }
+    // Check if end date has passed
+    else if (now > campaign.endDate) {
+      newStatus = 'COMPLETED';
+      notificationMessage = `Campaign "${campaign.title}" has ended`;
+      shouldUpdate = true;
+    }
+    // Check for low budget alert (less than 20%)
+    else if (campaign.remainingSpending < campaign.budget * 0.2) {
+      const settings = await this.prisma.notificationSettings.findUnique({
+        where: { userId: campaign.vendorId },
+      });
+
+      if (settings?.lowBudgetAlert) {
+        await this.notification.sendNotification(campaign.vendorId, {
+          type: 'LOW_BUDGET_ALERT',
+          title: 'Low Budget Alert',
+          message: `Campaign "${campaign.title}" has less than 20% budget remaining`,
+          data: { campaignId: campaign.campaignId },
+        });
+      }
+    }
+
+    if (shouldUpdate) {
+      await this.prisma.campaign.update({
+        where: { campaignId },
+        data: { status: newStatus },
+      });
+
       await this.notification.sendNotification(campaign.vendorId, {
-        type: 'LOW_BUDGET_ALERT',
-        title: 'Low Budget Alert',
-        message: `Campaign "${campaign.title}" has less than 20% budget remaining`,
+        type: 'CAMPAIGN_COMPLETED',
+        title: 'Campaign Completed',
+        message: notificationMessage,
         data: { campaignId: campaign.campaignId },
       });
     }
   }
-
-  if (shouldUpdate) {
-    await this.prisma.campaign.update({
-      where: { campaignId },
-      data: { status: newStatus },
-    });
-
-    await this.notification.sendNotification(campaign.vendorId, {
-      type: 'CAMPAIGN_COMPLETED',
-      title: 'Campaign Completed',
-      message: notificationMessage,
-      data: { campaignId: campaign.campaignId },
-    });
-  }
-}
 }

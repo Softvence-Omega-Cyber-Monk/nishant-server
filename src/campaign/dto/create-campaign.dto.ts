@@ -1,31 +1,12 @@
-import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, Min, Max, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsNotEmpty, IsNumber, IsDateString, IsOptional, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-class TargetedLocationDto {
-  @ApiPropertyOptional({ example: 'India', description: 'Target country' })
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @ApiPropertyOptional({ example: 'Maharashtra', description: 'Target state/province' })
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @ApiPropertyOptional({ example: 'Mumbai', description: 'Target city' })
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @ApiPropertyOptional({ example: 50, description: 'Radius in kilometers' })
-  @IsOptional()
-  @IsNumber()
-  radius?: number;
-}
+import { Transform } from 'class-transformer';
 
 export class CreateCampaignDto {
-  @ApiProperty({ example: 'Summer Sale 2024', description: 'Campaign title' })
+  @ApiProperty({ 
+    example: 'Summer Sale 2024', 
+    description: 'Campaign title' 
+  })
   @IsNotEmpty()
   @IsString()
   title: string;
@@ -38,50 +19,76 @@ export class CreateCampaignDto {
   @IsString()
   description: string;
 
-  // Remove validation decorators for mediaFiles since it's handled by FilesInterceptor
   @ApiProperty({ 
     type: 'array', 
     items: { type: 'string', format: 'binary' },
-    description: 'Media files (images/videos)',
+    description: 'Media files (images/videos) - at least one required',
+    required: true,
   })
-  mediaFiles?: Express.Multer.File[]; // Make optional, validated in controller
+  mediaFiles?: Express.Multer.File[];
 
-  // Change this to accept string (will be parsed in controller)
   @ApiProperty({ 
     type: 'string',
     description: 'Geographical targeting for campaign (JSON string)',
-    example: '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}'
+    example: '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}',
+    required: true,
   })
   @IsNotEmpty()
   @IsString()
-  targetedLocation: string; // Will be parsed to object
+  targetedLocation: string | object;
 
-  @ApiPropertyOptional({ example: 18 })
+  @ApiPropertyOptional({ 
+    example: 18,
+    description: 'Minimum target age',
+    minimum: 13,
+    maximum: 100,
+  })
   @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : undefined)
   @IsNumber()
   @Min(13)
   @Max(100)
   targetedAgeMin?: number;
 
-  @ApiPropertyOptional({ example: 45 })
+  @ApiPropertyOptional({ 
+    example: 45,
+    description: 'Maximum target age',
+    minimum: 13,
+    maximum: 100,
+  })
   @IsOptional()
+  @Transform(({ value }) => value ? Number(value) : undefined)
   @IsNumber()
   @Min(13)
   @Max(100)
   targetedAgeMax?: number;
 
-  @ApiProperty({ example: 10000 })
+  @ApiProperty({ 
+    example: 10000,
+    description: 'Campaign budget in INR',
+    minimum: 100,
+    required: true,
+  })
   @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
   @IsNumber()
   @Min(100)
   budget: number;
 
-  @ApiProperty({ example: '2024-12-20T00:00:00Z' })
+  @ApiProperty({ 
+    example: '2024-12-20T00:00:00Z',
+    description: 'Campaign start date and time',
+    required: true,
+  })
   @IsNotEmpty()
   @IsDateString()
   startDate: string;
 
-  @ApiProperty({ example: '2024-12-31T23:59:59Z' })
+  @ApiProperty({ 
+    example: '2024-12-31T23:59:59Z',
+    description: 'Campaign end date and time',
+    required: true,
+  })
   @IsNotEmpty()
   @IsDateString()
   endDate: string;
