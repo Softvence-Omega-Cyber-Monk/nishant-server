@@ -1,3 +1,4 @@
+// src/vendor/vendor.controller.ts
 import {
   Controller,
   Get,
@@ -8,7 +9,7 @@ import {
   UploadedFile,
   Query,
   ParseIntPipe,
-  DefaultValuePipe,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -30,137 +31,76 @@ import { UpdateVendorProfileDto } from './dto/update-vendor-profile.dto';
 import { UpdateNotificationSettingsDto } from 'src/notification/dto/update-notification-settings.dto';
 
 @ApiTags('Vendor')
-@ApiBearerAuth()
 @Controller('vendor')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('VENDOR')
+@ApiBearerAuth('JWT-auth')
 export class VendorController {
   constructor(
     private vendorService: VendorService,
     private notificationSettingsService: NotificationSettingsService,
   ) {}
 
-  // ==================== Profile Management ====================
-  
+  // ==================== PROFILE MANAGEMENT ====================
+
   @Get('profile')
   @ApiOperation({ 
     summary: 'Get vendor profile',
-    description: 'Retrieves the authenticated vendor\'s profile information including business details and social media links'
+    description: 'Retrieves complete vendor profile including follower count, description, category, contact info, and social media links.'
   })
   @ApiResponse({ 
-    status: 200, 
-    description: 'Vendor profile retrieved successfully',
+    status: HttpStatus.OK, 
+    description: 'Returns vendor profile',
     schema: {
-      type: 'object',
-      properties: {
-        userId: { type: 'string', example: 'user_abc123' },
-        fullName: { type: 'string', example: 'TechStore Bangladesh' },
-        email: { type: 'string', example: 'vendor@techstore.com' },
-        phone: { type: 'string', example: '+8801712345678' },
-        photo: { type: 'string', example: 'https://cloudinary.com/photo.jpg' },
-        description: { type: 'string', example: 'Leading electronics retailer in Dhaka' },
-        category: { type: 'string', example: 'Electronics' },
-        location: { type: 'string', example: 'Dhaka, Bangladesh' },
-        followerCount: { type: 'number', example: 1250 },
-        instagramUrl: { type: 'string', example: 'https://instagram.com/techstore' },
-        facebookUrl: { type: 'string', example: 'https://facebook.com/techstore' },
-        websiteUrl: { type: 'string', example: 'https://techstore.com' },
-        createdAt: { type: 'string', format: 'date-time' }
-      }
-    }
+      example: {
+        userId: 'uuid',
+        fullName: 'John Doe',
+        email: 'vendor@example.com',
+        phone: '+1234567890',
+        photo: 'https://cloudinary.com/photo.jpg',
+        description: 'Leading tech vendor',
+        category: 'Technology',
+        location: 'Mumbai, India',
+        followerCount: 1250,
+        instagramUrl: 'https://instagram.com/vendor',
+        facebookUrl: 'https://facebook.com/vendor',
+        websiteUrl: 'https://vendor.com',
+        createdAt: '2024-01-01T00:00:00Z',
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Vendor not found' })
   async getProfile(@GetUser('userId') userId: string) {
     return this.vendorService.getVendorProfile(userId);
   }
 
   @Put('profile')
   @UseInterceptors(FileInterceptor('photo'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ 
     summary: 'Update vendor profile',
-    description: 'Updates vendor profile information including photo upload. Old photo is automatically deleted from cloud storage.'
+    description: 'Updates vendor profile information including name, description, category, contact details, social links, and profile photo.'
   })
-  @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Vendor profile update data',
     schema: {
       type: 'object',
       properties: {
-        fullName: { 
-          type: 'string', 
-          example: 'TechStore Bangladesh',
-          description: 'Business or vendor name'
-        },
-        description: { 
-          type: 'string', 
-          example: 'Leading electronics retailer specializing in smartphones and laptops',
-          maxLength: 500
-        },
-        category: { 
-          type: 'string', 
-          example: 'Electronics',
-          description: 'Business category'
-        },
-        phone: { 
-          type: 'string', 
-          example: '+8801712345678',
-          pattern: '^\\+?[1-9]\\d{1,14}$'
-        },
-        location: { 
-          type: 'string', 
-          example: 'Gulshan, Dhaka, Bangladesh'
-        },
-        email: { 
-          type: 'string', 
-          format: 'email',
-          example: 'contact@techstore.com'
-        },
-        instagramUrl: { 
-          type: 'string', 
-          format: 'uri',
-          example: 'https://instagram.com/techstore'
-        },
-        facebookUrl: { 
-          type: 'string', 
-          format: 'uri',
-          example: 'https://facebook.com/techstore'
-        },
-        websiteUrl: { 
-          type: 'string', 
-          format: 'uri',
-          example: 'https://techstore.com'
-        },
-        photo: { 
-          type: 'string', 
-          format: 'binary',
-          description: 'Profile photo file (JPEG, PNG, WebP)'
-        }
-      }
-    }
+        fullName: { type: 'string', example: 'John Doe' },
+        description: { type: 'string', example: 'Leading technology vendor in Mumbai' },
+        category: { type: 'string', example: 'Technology' },
+        phone: { type: 'string', example: '+1234567890' },
+        location: { type: 'string', example: 'Mumbai, Maharashtra, India' },
+        email: { type: 'string', example: 'vendor@example.com' },
+        instagramUrl: { type: 'string', example: 'https://instagram.com/vendor' },
+        facebookUrl: { type: 'string', example: 'https://facebook.com/vendor' },
+        websiteUrl: { type: 'string', example: 'https://vendor.com' },
+        photo: { type: 'string', format: 'binary', description: 'Profile photo (jpg, png, max 5MB)' },
+      },
+    },
   })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Profile updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        userId: { type: 'string' },
-        fullName: { type: 'string' },
-        email: { type: 'string' },
-        phone: { type: 'string' },
-        photo: { type: 'string' },
-        description: { type: 'string' },
-        category: { type: 'string' },
-        location: { type: 'string' },
-        followerCount: { type: 'number' },
-        instagramUrl: { type: 'string' },
-        facebookUrl: { type: 'string' },
-        websiteUrl: { type: 'string' }
-      }
-    }
-  })
-  @ApiResponse({ status: 403, description: 'Only vendors can update vendor profile' })
-  @ApiResponse({ status: 404, description: 'Vendor not found' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Profile updated successfully' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input data' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Vendor not found' })
   async updateProfile(
     @GetUser('userId') userId: string,
     @Body() dto: UpdateVendorProfileDto,
@@ -169,81 +109,57 @@ export class VendorController {
     return this.vendorService.updateVendorProfile(userId, dto, photo);
   }
 
-  // ==================== Transaction Management ====================
-  
+  // ==================== TRANSACTION MANAGEMENT ====================
+
   @Get('transactions')
   @ApiOperation({ 
     summary: 'Get transaction history',
-    description: 'Retrieves paginated transaction history for the vendor including campaign payments and refunds'
+    description: 'Retrieves paginated list of all transactions with campaign details, total spending, and transaction summary.'
   })
-  @ApiQuery({ 
-    name: 'page', 
-    required: false, 
-    type: Number,
-    example: 1,
-    description: 'Page number (default: 1)'
-  })
-  @ApiQuery({ 
-    name: 'limit', 
-    required: false, 
-    type: Number,
-    example: 10,
-    description: 'Items per page (default: 10)'
-  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Items per page (default: 10)' })
   @ApiResponse({ 
-    status: 200, 
-    description: 'Transaction history retrieved successfully',
+    status: HttpStatus.OK, 
+    description: 'Returns paginated transactions',
     schema: {
-      type: 'object',
-      properties: {
-        transactions: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              transactionId: { type: 'string' },
-              amount: { type: 'number' },
-              type: { type: 'string', enum: ['CAMPAIGN_PAYMENT', 'REFUND'] },
-              status: { type: 'string', enum: ['SUCCESS', 'FAILED', 'PENDING'] },
-              description: { type: 'string' },
-              razorpayOrderId: { type: 'string' },
-              razorpayPaymentId: { type: 'string' },
-              createdAt: { type: 'string', format: 'date-time' },
-              campaign: {
-                type: 'object',
-                properties: {
-                  campaignId: { type: 'string' },
-                  title: { type: 'string' },
-                  status: { type: 'string' },
-                  budget: { type: 'number' }
-                }
-              }
-            }
-          }
-        },
+      example: {
+        transactions: [
+          {
+            transactionId: 'uuid',
+            amount: 10000,
+            type: 'CAMPAIGN_PAYMENT',
+            status: 'SUCCESS',
+            razorpayOrderId: 'order_id',
+            razorpayPaymentId: 'pay_id',
+            createdAt: '2024-12-01T00:00:00Z',
+            campaign: {
+              campaignId: 'uuid',
+              title: 'Summer Sale',
+              status: 'RUNNING',
+              budget: 10000,
+              startDate: '2024-12-01T00:00:00Z',
+              endDate: '2024-12-31T00:00:00Z',
+              createdAt: '2024-12-01T00:00:00Z',
+            },
+          },
+        ],
         pagination: {
-          type: 'object',
-          properties: {
-            page: { type: 'number', example: 1 },
-            limit: { type: 'number', example: 10 },
-            totalCount: { type: 'number', example: 45 },
-            totalPages: { type: 'number', example: 5 }
-          }
+          page: 1,
+          limit: 10,
+          totalCount: 25,
+          totalPages: 3,
         },
         summary: {
-          type: 'object',
-          properties: {
-            totalTransactions: { type: 'number', example: 45 },
-            totalSpending: { type: 'number', example: 125000 }
-          }
-        }
-      }
-    }
+          totalTransactions: 25,
+          totalSpending: 250000,
+        },
+      },
+    },
   })
   async getTransactions(
     @GetUser('userId') userId: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('page', new ParseIntPipe({ optional: true })) page: number = 1,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 10,
   ) {
     return this.vendorService.getTransactionHistory(userId, page, limit);
   }
@@ -251,106 +167,52 @@ export class VendorController {
   @Get('transactions/stats')
   @ApiOperation({ 
     summary: 'Get transaction statistics',
-    description: 'Retrieves comprehensive transaction statistics including monthly spending trends and success rates'
+    description: 'Retrieves comprehensive transaction statistics including total spending, refunds, monthly breakdown, and success/failure counts.'
   })
   @ApiResponse({ 
-    status: 200, 
-    description: 'Transaction statistics retrieved successfully',
+    status: HttpStatus.OK, 
+    description: 'Returns transaction statistics',
     schema: {
-      type: 'object',
-      properties: {
-        totalTransactions: { 
-          type: 'number', 
-          example: 45,
-          description: 'Total number of transactions'
-        },
-        totalSpending: { 
-          type: 'number', 
-          example: 125000,
-          description: 'Total amount spent on campaigns (INR)'
-        },
-        totalRefunds: { 
-          type: 'number', 
-          example: 5000,
-          description: 'Total refund amount (INR)'
-        },
-        successfulTransactions: { 
-          type: 'number', 
-          example: 42,
-          description: 'Number of successful transactions'
-        },
-        failedTransactions: { 
-          type: 'number', 
-          example: 3,
-          description: 'Number of failed transactions'
-        },
+      example: {
+        totalTransactions: 25,
+        totalSpending: 250000,
+        totalRefunds: 5000,
+        successfulTransactions: 23,
+        failedTransactions: 2,
         monthlySpending: {
-          type: 'object',
-          example: {
-            '2024-11': 35000,
-            '2024-12': 48000,
-            '2025-01': 42000
-          },
-          description: 'Monthly spending breakdown (YYYY-MM format)'
-        }
-      }
-    }
+          '2024-12': 50000,
+          '2024-11': 75000,
+          '2024-10': 125000,
+        },
+      },
+    },
   })
   async getTransactionStats(@GetUser('userId') userId: string) {
     return this.vendorService.getTransactionStats(userId);
   }
 
-  // ==================== Notification Settings ====================
-  
+  // ==================== NOTIFICATION SETTINGS ====================
+
   @Get('notification-settings')
   @ApiOperation({ 
     summary: 'Get notification settings',
-    description: 'Retrieves the vendor\'s notification preferences for various event types'
+    description: 'Retrieves vendor notification preferences for campaign performance, budget alerts, payments, and live updates.'
   })
   @ApiResponse({ 
-    status: 200, 
-    description: 'Notification settings retrieved successfully',
+    status: HttpStatus.OK, 
+    description: 'Returns notification settings',
     schema: {
-      type: 'object',
-      properties: {
-        userId: { type: 'string' },
-        campaignPerformanceUpdates: { 
-          type: 'boolean', 
-          example: true,
-          description: 'Daily campaign performance summaries'
-        },
-        liveCampaignUpdates: { 
-          type: 'boolean', 
-          example: true,
-          description: 'Real-time campaign status changes'
-        },
-        lowBudgetAlert: { 
-          type: 'boolean', 
-          example: true,
-          description: 'Alert when campaign budget is below 20%'
-        },
-        newCommentNotification: { 
-          type: 'boolean', 
-          example: true,
-          description: 'Notifications for new comments on campaigns'
-        },
-        newFollowerNotification: { 
-          type: 'boolean', 
-          example: false,
-          description: 'Notifications for new followers'
-        },
-        emailNotifications: { 
-          type: 'boolean', 
-          example: true,
-          description: 'Receive notifications via email'
-        },
-        pushNotifications: { 
-          type: 'boolean', 
-          example: true,
-          description: 'Receive push notifications on mobile'
-        }
-      }
-    }
+      example: {
+        settingsId: 'uuid',
+        userId: 'uuid',
+        campaignPerformanceUpdates: true,
+        lowBudgetAlert: true,
+        paymentTransactionUpdates: true,
+        liveCampaignUpdates: true,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-12-01T00:00:00Z',
+      },
+    },
   })
   async getNotificationSettings(@GetUser('userId') userId: string) {
     return this.notificationSettingsService.getNotificationSettings(userId);
@@ -359,59 +221,30 @@ export class VendorController {
   @Put('notification-settings')
   @ApiOperation({ 
     summary: 'Update notification settings',
-    description: 'Updates the vendor\'s notification preferences. Only provided fields will be updated.'
+    description: 'Updates vendor notification preferences. Controls which types of notifications vendor wants to receive.'
   })
-  @ApiBody({ 
+  @ApiBody({
     type: UpdateNotificationSettingsDto,
-    description: 'Notification settings to update',
     examples: {
-      'disable-all': {
-        summary: 'Disable all notifications',
+      example1: {
+        summary: 'Enable all notifications',
+        value: {
+          campaignPerformanceUpdates: true,
+          lowBudgetAlert: true,
+          paymentTransactionUpdates: true,
+          liveCampaignUpdates: true,
+        },
+      },
+      example2: {
+        summary: 'Disable performance updates',
         value: {
           campaignPerformanceUpdates: false,
-          liveCampaignUpdates: false,
-          lowBudgetAlert: false,
-          newCommentNotification: false,
-          newFollowerNotification: false,
-          emailNotifications: false,
-          pushNotifications: false
-        }
-      },
-      'critical-only': {
-        summary: 'Only critical alerts',
-        value: {
-          lowBudgetAlert: true,
-          liveCampaignUpdates: true,
-          emailNotifications: true
-        }
-      }
-    }
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Notification settings updated successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { 
-          type: 'string', 
-          example: 'Notification settings updated successfully' 
         },
-        settings: {
-          type: 'object',
-          properties: {
-            campaignPerformanceUpdates: { type: 'boolean' },
-            liveCampaignUpdates: { type: 'boolean' },
-            lowBudgetAlert: { type: 'boolean' },
-            newCommentNotification: { type: 'boolean' },
-            newFollowerNotification: { type: 'boolean' },
-            emailNotifications: { type: 'boolean' },
-            pushNotifications: { type: 'boolean' }
-          }
-        }
-      }
-    }
+      },
+    },
   })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Notification settings updated successfully' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input data' })
   async updateNotificationSettings(
     @GetUser('userId') userId: string,
     @Body() dto: UpdateNotificationSettingsDto,

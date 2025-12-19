@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Param, Body, UseGuards } from '@nestjs/common';
+// src/engagement/engagement.controller.ts
+import { Controller, Post, Get, Param, Body, UseGuards, HttpStatus } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,44 +11,33 @@ import {
 import { EngagementService } from './engagement.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { RecordClickDto, RecordConversionDto, RecordImpressionDto } from './dto/engagement.dto';
 
 @ApiTags('Engagement')
-@ApiBearerAuth()
 @Controller('engagement')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
 export class EngagementController {
   constructor(private engagementService: EngagementService) {}
+
+  // ==================== LIKE ====================
 
   @Post('campaigns/:campaignId/like')
   @ApiOperation({ 
     summary: 'Toggle like on campaign',
-    description: 'Likes or unlikes a campaign. If already liked, removes the like. If not liked, adds a like.'
+    description: 'Likes or unlikes a campaign. If already liked, removes the like. If not liked, adds a like. User can only have one like per campaign.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiResponse({ 
-    status: 201, 
+    status: HttpStatus.OK, 
     description: 'Like toggled successfully',
     schema: {
-      type: 'object',
-      properties: {
-        action: { 
-          type: 'string', 
-          enum: ['liked', 'unliked'],
-          example: 'liked'
-        },
-        liked: { 
-          type: 'boolean',
-          example: true
-        }
-      }
-    }
+      example: {
+        action: 'liked',
+        liked: true,
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async toggleLike(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -55,35 +45,25 @@ export class EngagementController {
     return this.engagementService.toggleLike(campaignId, userId);
   }
 
+  // ==================== DISLIKE ====================
+
   @Post('campaigns/:campaignId/dislike')
   @ApiOperation({ 
     summary: 'Toggle dislike on campaign',
-    description: 'Dislikes or removes dislike from a campaign. Toggle behavior similar to like.'
+    description: 'Dislikes or removes dislike from a campaign. User can only have one dislike per campaign.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiResponse({ 
-    status: 201, 
+    status: HttpStatus.OK, 
     description: 'Dislike toggled successfully',
     schema: {
-      type: 'object',
-      properties: {
-        action: { 
-          type: 'string', 
-          enum: ['disliked', 'removed_dislike'],
-          example: 'disliked'
-        },
-        disliked: { 
-          type: 'boolean',
-          example: true
-        }
-      }
-    }
+      example: {
+        action: 'disliked',
+        disliked: true,
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async toggleDislike(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -91,35 +71,25 @@ export class EngagementController {
     return this.engagementService.toggleDislike(campaignId, userId);
   }
 
+  // ==================== LOVE ====================
+
   @Post('campaigns/:campaignId/love')
   @ApiOperation({ 
     summary: 'Toggle love on campaign',
-    description: 'Adds or removes a love reaction to a campaign. Love is a stronger positive reaction than like.'
+    description: 'Loves or unloves a campaign. Love is a stronger positive reaction than like. User can only have one love per campaign.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiResponse({ 
-    status: 201, 
+    status: HttpStatus.OK, 
     description: 'Love toggled successfully',
     schema: {
-      type: 'object',
-      properties: {
-        action: { 
-          type: 'string', 
-          enum: ['loved', 'unloved'],
-          example: 'loved'
-        },
-        loved: { 
-          type: 'boolean',
-          example: true
-        }
-      }
-    }
+      example: {
+        action: 'loved',
+        loved: true,
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async toggleLove(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -127,30 +97,24 @@ export class EngagementController {
     return this.engagementService.toggleLove(campaignId, userId);
   }
 
+  // ==================== SHARE ====================
+
   @Post('campaigns/:campaignId/share')
   @ApiOperation({ 
     summary: 'Share campaign',
-    description: 'Records a share action for the campaign. Each share is tracked separately (not a toggle).'
+    description: 'Records a campaign share event. Increments campaign share count. Can be called multiple times by same user.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiResponse({ 
-    status: 201, 
+    status: HttpStatus.OK, 
     description: 'Campaign shared successfully',
     schema: {
-      type: 'object',
-      properties: {
-        message: { 
-          type: 'string',
-          example: 'Campaign shared successfully'
-        }
-      }
-    }
+      example: {
+        message: 'Campaign shared successfully',
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async shareCampaign(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -158,35 +122,25 @@ export class EngagementController {
     return this.engagementService.shareCampaign(campaignId, userId);
   }
 
+  // ==================== SAVE ====================
+
   @Post('campaigns/:campaignId/save')
   @ApiOperation({ 
-    summary: 'Toggle save campaign',
-    description: 'Saves or unsaves a campaign for later viewing. Saved campaigns appear in user\'s saved list.'
+    summary: 'Toggle save on campaign',
+    description: 'Saves or unsaves a campaign for later viewing. User can only have one save per campaign.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiResponse({ 
-    status: 201, 
+    status: HttpStatus.OK, 
     description: 'Save toggled successfully',
     schema: {
-      type: 'object',
-      properties: {
-        action: { 
-          type: 'string', 
-          enum: ['saved', 'unsaved'],
-          example: 'saved'
-        },
-        saved: { 
-          type: 'boolean',
-          example: true
-        }
-      }
-    }
+      example: {
+        action: 'saved',
+        saved: true,
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async toggleSave(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -194,152 +148,184 @@ export class EngagementController {
     return this.engagementService.toggleSave(campaignId, userId);
   }
 
+  // ==================== IMPRESSION ====================
+
   @Post('campaigns/:campaignId/impression')
   @ApiOperation({ 
     summary: 'Record impression',
-    description: 'Records when a user views a campaign ad. Prevents duplicate impressions within 24 hours from the same user.'
+    description: 'Records when a campaign is viewed/displayed. Only one impression per user per 24 hours to avoid duplicates. Used for analytics and CTR calculation.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
-  @ApiBody({ 
-    type: RecordImpressionDto,
-    description: 'Impression metadata including location and device information'
-  })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Impression recorded successfully',
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
+  @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        message: { 
-          type: 'string',
-          example: 'Impression recorded'
-        }
-      }
-    }
+        location: {
+          type: 'object',
+          properties: {
+            country: { type: 'string', example: 'India' },
+            state: { type: 'string', example: 'Maharashtra' },
+            city: { type: 'string', example: 'Mumbai' },
+          },
+        },
+        deviceType: { type: 'string', example: 'mobile', enum: ['mobile', 'tablet', 'desktop'] },
+      },
+    },
+    examples: {
+      example1: {
+        summary: 'With location data',
+        value: {
+          location: { country: 'India', state: 'Maharashtra', city: 'Mumbai' },
+          deviceType: 'mobile',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Impression recorded',
+    schema: {
+      example: {
+        message: 'Impression recorded',
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async recordImpression(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
-    @Body() body: RecordImpressionDto,
+    @Body() body: { location?: any; deviceType?: string },
   ) {
     return this.engagementService.recordImpression(campaignId, userId, body);
   }
 
+  // ==================== CLICK ====================
+
   @Post('campaigns/:campaignId/click')
   @ApiOperation({ 
     summary: 'Record click',
-    description: 'Records when a user clicks on a campaign ad. Updates CTR and deducts from campaign budget (₹0.50 per click).'
+    description: 'Records when a user clicks on a campaign (e.g., clicking CTA button). Deducts from campaign budget ($0.50 per click). Updates CTR automatically.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
-  @ApiBody({ 
-    type: RecordClickDto,
-    description: 'Click metadata including location and device information'
-  })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Click recorded successfully',
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
+  @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        message: { 
-          type: 'string',
-          example: 'Click recorded'
-        }
-      }
-    }
+        location: {
+          type: 'object',
+          properties: {
+            country: { type: 'string', example: 'India' },
+            state: { type: 'string', example: 'Maharashtra' },
+            city: { type: 'string', example: 'Mumbai' },
+          },
+        },
+        deviceType: { type: 'string', example: 'mobile', enum: ['mobile', 'tablet', 'desktop'] },
+      },
+    },
+    examples: {
+      example1: {
+        summary: 'With location data',
+        value: {
+          location: { country: 'India', state: 'Maharashtra', city: 'Mumbai' },
+          deviceType: 'mobile',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Click recorded and budget deducted',
+    schema: {
+      example: {
+        message: 'Click recorded',
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async recordClick(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
-    @Body() body: RecordClickDto,
+    @Body() body: { location?: any; deviceType?: string },
   ) {
     return this.engagementService.recordClick(campaignId, userId, body);
   }
 
+  // ==================== CONVERSION ====================
+
   @Post('campaigns/:campaignId/conversion')
   @ApiOperation({ 
     summary: 'Record conversion',
-    description: 'Records a conversion event (e.g., purchase, signup) resulting from the campaign. Notifies the vendor.'
+    description: 'Records a conversion event (purchase, signup, download, etc.). Sends notification to vendor. Used for measuring campaign ROI.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
-  @ApiBody({ 
-    type: RecordConversionDto,
-    description: 'Conversion data including amount, type, and additional metadata'
-  })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Conversion recorded successfully',
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
+  @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        message: { 
-          type: 'string',
-          example: 'Conversion recorded'
-        }
-      }
-    }
+        amount: { type: 'number', example: 999.99, description: 'Conversion value/amount' },
+        type: { type: 'string', example: 'purchase', description: 'Type of conversion' },
+        metadata: { 
+          type: 'object', 
+          example: { productId: 'prod123', orderId: 'order456' },
+          description: 'Additional conversion data',
+        },
+      },
+    },
+    examples: {
+      purchase: {
+        summary: 'Purchase conversion',
+        value: {
+          amount: 999.99,
+          type: 'purchase',
+          metadata: { productId: 'prod123', orderId: 'order456' },
+        },
+      },
+      signup: {
+        summary: 'Signup conversion',
+        value: {
+          type: 'signup',
+          metadata: { plan: 'premium' },
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: 'Campaign not found' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Conversion recorded',
+    schema: {
+      example: {
+        message: 'Conversion recorded',
+      },
+    },
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
   async recordConversion(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
-    @Body() body: RecordConversionDto,
+    @Body() body: { amount?: number; type?: string; metadata?: any },
   ) {
     return this.engagementService.recordConversion(campaignId, userId, body);
   }
 
+  // ==================== ENGAGEMENT STATUS ====================
+
   @Get('campaigns/:campaignId/status')
   @ApiOperation({ 
     summary: 'Get user engagement status',
-    description: 'Retrieves the current user\'s engagement status with a campaign (liked, disliked, loved, saved).'
+    description: 'Returns current user\'s engagement status with a campaign (liked, disliked, loved, saved). Used to show correct UI state.'
   })
-  @ApiParam({ 
-    name: 'campaignId', 
-    description: 'Campaign ID',
-    example: 'campaign_abc123'
-  })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiResponse({ 
-    status: 200, 
-    description: 'Engagement status retrieved successfully',
+    status: HttpStatus.OK, 
+    description: 'Returns user engagement status',
     schema: {
-      type: 'object',
-      properties: {
-        liked: { 
-          type: 'boolean',
-          example: true,
-          description: 'Whether user has liked the campaign'
-        },
-        disliked: { 
-          type: 'boolean',
-          example: false,
-          description: 'Whether user has disliked the campaign'
-        },
-        loved: { 
-          type: 'boolean',
-          example: true,
-          description: 'Whether user has loved the campaign'
-        },
-        saved: { 
-          type: 'boolean',
-          example: false,
-          description: 'Whether user has saved the campaign'
-        }
-      }
-    }
+      example: {
+        liked: true,
+        disliked: false,
+        loved: false,
+        saved: true,
+      },
+    },
   })
   async getEngagementStatus(
     @Param('campaignId') campaignId: string,

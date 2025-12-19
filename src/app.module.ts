@@ -16,17 +16,28 @@ import { VendorModule } from './vendor/vendor.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { AadharModule } from './aadhar/aadhar.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationGateway } from './notification/notification.gateway';
 
 @Module({
-  imports: [ConfigModule.forRoot({
+  imports: [
+    ConfigModule.forRoot({
       isGlobal: true,
-      load: [configuration],
       envFilePath: '.env',
-    }), PrismaModule, AuthModule, CampaignModule, EngagementModule,NotificationModule,RazorpayModule,VendorModule, CloudinaryModule, ScheduleModule.forRoot()],
+      load: [configuration],  // THIS IS CRITICAL - Load the configuration
+    }), 
+    PrismaModule, 
+    AuthModule, 
+    CampaignModule,
+    NotificationModule,
+    RazorpayModule,
+    VendorModule,
+    CloudinaryModule,
+    ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    EngagementModule
+  ],
   controllers: [AppController],
-  providers: [{
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },AppService, PrismaService],
+  providers: [AppService],
 })
 export class AppModule {}

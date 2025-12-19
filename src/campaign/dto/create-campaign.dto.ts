@@ -3,130 +3,85 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class TargetedLocationDto {
-  @ApiPropertyOptional({ 
-    description: 'Target country',
-    example: 'Bangladesh'
-  })
+  @ApiPropertyOptional({ example: 'India', description: 'Target country' })
   @IsOptional()
   @IsString()
   country?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Target state or division',
-    example: 'Dhaka Division'
-  })
+  @ApiPropertyOptional({ example: 'Maharashtra', description: 'Target state/province' })
   @IsOptional()
   @IsString()
   state?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Target city',
-    example: 'Dhaka'
-  })
+  @ApiPropertyOptional({ example: 'Mumbai', description: 'Target city' })
   @IsOptional()
   @IsString()
   city?: string;
 
-  @ApiPropertyOptional({ 
-    description: 'Radius in kilometers from the target location',
-    example: 10,
-    minimum: 0
-  })
+  @ApiPropertyOptional({ example: 50, description: 'Radius in kilometers' })
   @IsOptional()
   @IsNumber()
   radius?: number;
 }
 
 export class CreateCampaignDto {
-  @ApiProperty({ 
-    description: 'Campaign title',
-    example: 'Summer Sale 2025',
-    minLength: 3,
-    maxLength: 100
-  })
+  @ApiProperty({ example: 'Summer Sale 2024', description: 'Campaign title' })
   @IsNotEmpty()
   @IsString()
   title: string;
 
   @ApiProperty({ 
-    description: 'Detailed campaign description',
-    example: 'Get up to 50% off on all summer collections. Limited time offer!',
-    minLength: 10,
-    maxLength: 1000
+    example: 'Amazing summer sale with 50% off on all products', 
+    description: 'Detailed campaign description' 
   })
   @IsNotEmpty()
   @IsString()
   description: string;
 
+  // Remove validation decorators for mediaFiles since it's handled by FilesInterceptor
   @ApiProperty({ 
-    description: 'Media files for the campaign (images/videos)',
-    type: 'array',
+    type: 'array', 
     items: { type: 'string', format: 'binary' },
-    maxItems: 10
+    description: 'Media files (images/videos)',
   })
-  @IsNotEmpty()
-  @IsArray()
-  mediaFiles: Express.Multer.File[];
+  mediaFiles?: Express.Multer.File[]; // Make optional, validated in controller
 
+  // Change this to accept string (will be parsed in controller)
   @ApiProperty({ 
-    description: 'Geographic targeting for the campaign',
-    type: TargetedLocationDto
+    type: 'string',
+    description: 'Geographical targeting for campaign (JSON string)',
+    example: '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}'
   })
   @IsNotEmpty()
-  @ValidateNested()
-  @Type(() => TargetedLocationDto)
-  targetedLocation: TargetedLocationDto;
+  @IsString()
+  targetedLocation: string; // Will be parsed to object
 
-  @ApiPropertyOptional({ 
-    description: 'Minimum age of target audience',
-    example: 18,
-    minimum: 13,
-    maximum: 100
-  })
+  @ApiPropertyOptional({ example: 18 })
   @IsOptional()
   @IsNumber()
   @Min(13)
   @Max(100)
   targetedAgeMin?: number;
 
-  @ApiPropertyOptional({ 
-    description: 'Maximum age of target audience',
-    example: 45,
-    minimum: 13,
-    maximum: 100
-  })
+  @ApiPropertyOptional({ example: 45 })
   @IsOptional()
   @IsNumber()
   @Min(13)
   @Max(100)
   targetedAgeMax?: number;
 
-  @ApiProperty({ 
-    description: 'Campaign budget in INR',
-    example: 5000,
-    minimum: 100
-  })
+  @ApiProperty({ example: 10000 })
   @IsNotEmpty()
   @IsNumber()
   @Min(100)
   budget: number;
 
-  @ApiProperty({ 
-    description: 'Campaign start date and time',
-    example: '2025-01-01T00:00:00Z',
-    type: String,
-    format: 'date-time'
-  })
+  @ApiProperty({ example: '2024-12-20T00:00:00Z' })
   @IsNotEmpty()
   @IsDateString()
   startDate: string;
 
-  @ApiProperty({ 
-    description: 'Campaign end date and time',
-    example: '2025-01-31T23:59:59Z',
-    type: String,
-    format: 'date-time'
-  })
+  @ApiProperty({ example: '2024-12-31T23:59:59Z' })
   @IsNotEmpty()
   @IsDateString()
   endDate: string;

@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NotificationService } from './notification.service';
 import { NotificationSettingsService } from './notification-settings.service';
 import { NotificationGateway } from './notification.gateway';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -13,11 +13,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     EventEmitterModule.forRoot(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
+      useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: '7d' },
+        signOptions: {
+          expiresIn: configService.get('JWT_EXPIRES_IN') || '7d',
+        },
       }),
+      inject: [ConfigService],
     }),
   ],
   providers: [NotificationService, NotificationSettingsService, NotificationGateway],

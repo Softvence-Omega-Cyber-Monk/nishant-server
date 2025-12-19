@@ -5,9 +5,8 @@ import { CreateCampaignDto } from './create-campaign.dto';
 
 export class UpdateCampaignDto extends PartialType(CreateCampaignDto) {
   @ApiPropertyOptional({ 
-    description: 'Campaign status',
     enum: ['RUNNING', 'PAUSED', 'COMPLETED'],
-    example: 'PAUSED'
+    description: 'Campaign status',
   })
   @IsOptional()
   @IsEnum(['RUNNING', 'PAUSED', 'COMPLETED'])

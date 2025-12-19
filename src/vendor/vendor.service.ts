@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateVendorProfileDto } from './dto/update-vendor-profile.dto';
-
 @Injectable()
 export class VendorService {
   constructor(

@@ -1,10 +1,23 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log'],
+  });
+
+  // Enable CORS
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -15,51 +28,64 @@ async function bootstrap() {
       },
     }),
   );
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-  });
 
-  // Swagger Documentation Setup
+  // Increase payload size limit for file uploads
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ limit: '50mb', extended: true }));
+
+  // Global prefix
+  app.setGlobalPrefix('api/v1');
+
+  // Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('# Ad Platform API Documentation')
-    .setVersion('1.0.0')
+    .setTitle('Local Ad Campaign Management API')
+    .setDescription('Complete API documentation for Campaign Management System with Vendor features')
+    .setVersion('1.0')
+    .addTag('Campaigns', 'Campaign management endpoints')
+    .addTag('Vendor', 'Vendor profile and transaction management')
+    .addTag('Engagement', 'User engagement endpoints (likes, shares, clicks)')
+    .addTag('Notifications', 'Notification settings management')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'JWT',
-        description: 'Enter your JWT access token',
+        description: 'Enter JWT token',
         in: 'header',
       },
       'JWT-auth',
     )
-    .addTag('Authentication', 'User authentication, registration, and Aadhaar verification endpoints')
-    .addServer('http://localhost:3000', 'Local development')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config, {
-    deepScanRoutes: true,
-  });
-
+  const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document, {
-    customSiteTitle: 'Aadhaar Auth API Docs',
-    customfavIcon: 'https://nestjs.com/img/logo_text.svg',
-    customCss: `
-      .swagger-ui .topbar { display: none }
-      .swagger-ui .info .title { color: #e0234e }
-    `,
     swaggerOptions: {
       persistAuthorization: true,
-      docExpansion: 'list',
-      filter: true,
-      showRequestDuration: true,
-      syntaxHighlight: {
-        theme: 'monokai',
-      },
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
     },
+    customSiteTitle: 'Campaign Management API Docs',
+    customCss: '.swagger-ui .topbar { display: none }',
   });
-  await app.listen(process.env.PORT ?? 3000);
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  
+  console.log(`
+    ╔═══════════════════════════════════════════════════════╗
+    ║                                                       ║
+    ║   🚀 Campaign Management API is running!             ║
+    ║                                                       ║
+    ║   📡 Server: http://localhost:${port}/api/v1           ║
+    ║   📚 Swagger: http://localhost:${port}/api/docs        ║
+    ║   🔌 WebSocket: ws://localhost:${port}/notifications  ║
+    ║                                                       ║
+    ╚═══════════════════════════════════════════════════════╝
+  `);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  console.error('Error starting application:', err);
+  process.exit(1);
+});

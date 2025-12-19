@@ -1,3 +1,4 @@
+// src/notification/notification.gateway.ts
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -7,10 +8,13 @@ import {
 import { Server, Socket } from 'socket.io';
 import { OnEvent } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: {
     origin: '*',
+    credentials: true,
   },
   namespace: 'notifications',
 })
@@ -18,21 +22,34 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   @WebSocketServer()
   server: Server;
 
+  private readonly logger = new Logger(NotificationGateway.name);
   private userSockets: Map<string, string[]> = new Map();
 
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
 
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth.token || client.handshake.headers.authorization?.split(' ')[1];
+      const token = client.handshake.auth.token || 
+                    client.handshake.headers.authorization?.split(' ')[1];
       
       if (!token) {
+        this.logger.warn('Client attempted connection without token');
         client.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token);
+      const secret = this.configService.get<string>('JWT_SECRET');
+      const payload = this.jwtService.verify(token, { secret });
       const userId = payload.sub || payload.userId;
+
+      if (!userId) {
+        this.logger.warn('Invalid token payload');
+        client.disconnect();
+        return;
+      }
 
       // Store socket connection
       const sockets = this.userSockets.get(userId) || [];
@@ -42,9 +59,16 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
       client.data.userId = userId;
       client.join(userId);
 
-      console.log(`User ${userId} connected with socket ${client.id}`);
+      this.logger.log(`User ${userId} connected with socket ${client.id}`);
+      
+      // Send connection confirmation
+      client.emit('connected', { 
+        userId, 
+        message: 'Connected to notification service',
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      this.logger.error(`WebSocket connection error: ${error.message}`);
       client.disconnect();
     }
   }
@@ -61,7 +85,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
         this.userSockets.delete(userId);
       }
 
-      console.log(`User ${userId} disconnected socket ${client.id}`);
+      this.logger.log(`User ${userId} disconnected socket ${client.id}`);
     }
   }
 
@@ -69,17 +93,23 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   handleNotificationEvent(payload: any) {
     const { userId, ...notification } = payload;
     
-    // Send to specific user
-    this.server.to(userId).emit('notification', notification);
+    if (userId && this.userSockets.has(userId)) {
+      this.server.to(userId).emit('notification', notification);
+      this.logger.log(`Sent notification to user ${userId}`);
+    }
   }
 
-  // Method to send notification to specific user
   sendToUser(userId: string, event: string, data: any) {
-    this.server.to(userId).emit(event, data);
+    if (this.userSockets.has(userId)) {
+      this.server.to(userId).emit(event, data);
+    }
   }
 
-  // Method to broadcast to all connected users
   broadcast(event: string, data: any) {
     this.server.emit(event, data);
+  }
+
+  getConnectedUsersCount(): number {
+    return this.userSockets.size;
   }
 }
