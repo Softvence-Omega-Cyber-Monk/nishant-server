@@ -22,7 +22,11 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
       inject: [ConfigService],
     }),
   ],
-  providers: [NotificationService, NotificationSettingsService, NotificationGateway],
+  providers: [
+    NotificationService,
+    NotificationSettingsService,
+    NotificationGateway,
+  ],
   exports: [NotificationService, NotificationSettingsService],
 })
 export class NotificationModule {}

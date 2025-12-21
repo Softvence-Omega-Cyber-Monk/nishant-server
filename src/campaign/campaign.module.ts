@@ -8,12 +8,7 @@ import { RazorpayModule } from '../razorpay/razorpay.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    CloudinaryModule,
-    RazorpayModule,
-    NotificationModule,
-  ],
+  imports: [PrismaModule, CloudinaryModule, RazorpayModule, NotificationModule],
   controllers: [CampaignController],
   providers: [CampaignService, CampaignScheduler],
   exports: [CampaignService],

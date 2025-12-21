@@ -3,41 +3,41 @@ import { IsOptional, IsString, IsNumber, IsObject, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 class LocationDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Country',
-    example: 'Bangladesh'
+    example: 'Bangladesh',
   })
   @IsOptional()
   @IsString()
   country?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'State or division',
-    example: 'Dhaka Division'
+    example: 'Dhaka Division',
   })
   @IsOptional()
   @IsString()
   state?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'City',
-    example: 'Dhaka'
+    example: 'Dhaka',
   })
   @IsOptional()
   @IsString()
   city?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Latitude coordinate',
-    example: 23.8103
+    example: 23.8103,
   })
   @IsOptional()
   @IsNumber()
   latitude?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Longitude coordinate',
-    example: 90.4125
+    example: 90.4125,
   })
   @IsOptional()
   @IsNumber()
@@ -45,18 +45,18 @@ class LocationDto {
 }
 
 export class RecordImpressionDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'User location when impression occurred',
-    type: LocationDto
+    type: LocationDto,
   })
   @IsOptional()
   @IsObject()
   location?: LocationDto;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Device type (mobile, tablet, desktop)',
     example: 'mobile',
-    enum: ['mobile', 'tablet', 'desktop']
+    enum: ['mobile', 'tablet', 'desktop'],
   })
   @IsOptional()
   @IsString()
@@ -64,18 +64,18 @@ export class RecordImpressionDto {
 }
 
 export class RecordClickDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'User location when click occurred',
-    type: LocationDto
+    type: LocationDto,
   })
   @IsOptional()
   @IsObject()
   location?: LocationDto;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Device type (mobile, tablet, desktop)',
     example: 'mobile',
-    enum: ['mobile', 'tablet', 'desktop']
+    enum: ['mobile', 'tablet', 'desktop'],
   })
   @IsOptional()
   @IsString()
@@ -83,32 +83,32 @@ export class RecordClickDto {
 }
 
 export class RecordConversionDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Conversion amount (e.g., purchase value)',
     example: 1500,
-    minimum: 0
+    minimum: 0,
   })
   @IsOptional()
   @IsNumber()
   @Min(0)
   amount?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Type of conversion',
     example: 'purchase',
-    enum: ['purchase', 'signup', 'download', 'subscription', 'general']
+    enum: ['purchase', 'signup', 'download', 'subscription', 'general'],
   })
   @IsOptional()
   @IsString()
   type?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Additional conversion metadata',
     example: {
       productId: 'prod_123',
       quantity: 2,
-      category: 'electronics'
-    }
+      category: 'electronics',
+    },
   })
   @IsOptional()
   @IsObject()

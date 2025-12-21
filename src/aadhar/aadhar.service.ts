@@ -24,7 +24,7 @@ export class AadhaarService {
   private getHeaders() {
     return {
       'Content-Type': 'application/json',
-      'apikey': this.apiKey,
+      apikey: this.apiKey,
       // Some endpoints may require Basic Auth or Bearer – adjust per docs
       // Authorization: `Basic ${Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64')}`,
     };
@@ -34,8 +34,8 @@ export class AadhaarService {
   async requestOtp(aadhaarNumber: string, transactionId?: string) {
     const payload = {
       aadhaar_number: aadhaarNumber,
-      consent: 'Y',  // User consent mandatory
-      txn_id: transactionId || `TXN_${Date.now()}`,  // Unique txn ID
+      consent: 'Y', // User consent mandatory
+      txn_id: transactionId || `TXN_${Date.now()}`, // Unique txn ID
       // Additional params like purpose, etc., as per Protean docs
     };
 
@@ -53,7 +53,7 @@ export class AadhaarService {
           success: true,
           txnId: payload.txn_id,
           message: 'OTP sent successfully',
-          refId: response.data.ref_id,  // Often returned
+          refId: response.data.ref_id, // Often returned
         };
       }
       throw new Error(response.data.message || 'OTP request failed');
@@ -84,7 +84,8 @@ export class AadhaarService {
       );
 
       if (response.data.success || response.data.ret === 'Y') {
-        const data = response.data.data || response.data.KycRes || response.data;
+        const data =
+          response.data.data || response.data.KycRes || response.data;
 
         return {
           success: true,
@@ -104,7 +105,7 @@ export class AadhaarService {
               country: data.Poa?.country,
             },
             maskedAadhaar: data.masked_aadhaar || data.uid,
-            photo: data.photo || data.Pht,  // Base64
+            photo: data.photo || data.Pht, // Base64
             transactionId: txnId,
           },
         };

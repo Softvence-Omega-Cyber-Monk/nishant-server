@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateVendorProfileDto } from './dto/update-vendor-profile.dto';
@@ -36,7 +40,11 @@ export class VendorService {
     return vendor;
   }
 
-  async updateVendorProfile(vendorId: string, dto: UpdateVendorProfileDto, photo?: Express.Multer.File) {
+  async updateVendorProfile(
+    vendorId: string,
+    dto: UpdateVendorProfileDto,
+    photo?: Express.Multer.File,
+  ) {
     const vendor = await this.prisma.user.findUnique({
       where: { userId: vendorId },
     });
@@ -91,7 +99,11 @@ export class VendorService {
     return filename.split('.')[0];
   }
 
-  async getTransactionHistory(vendorId: string, page: number = 1, limit: number = 10) {
+  async getTransactionHistory(
+    vendorId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const skip = (page - 1) * limit;
 
     const [transactions, totalCount] = await Promise.all([
@@ -178,8 +190,10 @@ export class VendorService {
       totalTransactions: transactions.length,
       totalSpending,
       totalRefunds,
-      successfulTransactions: transactions.filter((t) => t.status === 'SUCCESS').length,
-      failedTransactions: transactions.filter((t) => t.status === 'FAILED').length,
+      successfulTransactions: transactions.filter((t) => t.status === 'SUCCESS')
+        .length,
+      failedTransactions: transactions.filter((t) => t.status === 'FAILED')
+        .length,
       monthlySpending: monthlyData,
     };
   }

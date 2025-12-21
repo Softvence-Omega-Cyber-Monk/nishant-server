@@ -1,5 +1,13 @@
 // src/engagement/engagement.controller.ts
-import { Controller, Post, Get, Param, Body, UseGuards, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  UseGuards,
+  HttpStatus,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -22,13 +30,14 @@ export class EngagementController {
   // ==================== LIKE ====================
 
   @Post('campaigns/:campaignId/like')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Toggle like on campaign',
-    description: 'Likes or unlikes a campaign. If already liked, removes the like. If not liked, adds a like. User can only have one like per campaign.'
+    description:
+      'Likes or unlikes a campaign. If already liked, removes the like. If not liked, adds a like. User can only have one like per campaign.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Like toggled successfully',
     schema: {
       example: {
@@ -37,7 +46,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async toggleLike(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -48,13 +60,14 @@ export class EngagementController {
   // ==================== DISLIKE ====================
 
   @Post('campaigns/:campaignId/dislike')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Toggle dislike on campaign',
-    description: 'Dislikes or removes dislike from a campaign. User can only have one dislike per campaign.'
+    description:
+      'Dislikes or removes dislike from a campaign. User can only have one dislike per campaign.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Dislike toggled successfully',
     schema: {
       example: {
@@ -63,7 +76,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async toggleDislike(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -74,13 +90,14 @@ export class EngagementController {
   // ==================== LOVE ====================
 
   @Post('campaigns/:campaignId/love')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Toggle love on campaign',
-    description: 'Loves or unloves a campaign. Love is a stronger positive reaction than like. User can only have one love per campaign.'
+    description:
+      'Loves or unloves a campaign. Love is a stronger positive reaction than like. User can only have one love per campaign.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Love toggled successfully',
     schema: {
       example: {
@@ -89,7 +106,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async toggleLove(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -100,13 +120,14 @@ export class EngagementController {
   // ==================== SHARE ====================
 
   @Post('campaigns/:campaignId/share')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Share campaign',
-    description: 'Records a campaign share event. Increments campaign share count. Can be called multiple times by same user.'
+    description:
+      'Records a campaign share event. Increments campaign share count. Can be called multiple times by same user.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Campaign shared successfully',
     schema: {
       example: {
@@ -114,7 +135,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async shareCampaign(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -125,13 +149,14 @@ export class EngagementController {
   // ==================== SAVE ====================
 
   @Post('campaigns/:campaignId/save')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Toggle save on campaign',
-    description: 'Saves or unsaves a campaign for later viewing. User can only have one save per campaign.'
+    description:
+      'Saves or unsaves a campaign for later viewing. User can only have one save per campaign.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Save toggled successfully',
     schema: {
       example: {
@@ -140,7 +165,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async toggleSave(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -151,9 +179,10 @@ export class EngagementController {
   // ==================== IMPRESSION ====================
 
   @Post('campaigns/:campaignId/impression')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Record impression',
-    description: 'Records when a campaign is viewed/displayed. Only one impression per user per 24 hours to avoid duplicates. Used for analytics and CTR calculation.'
+    description:
+      'Records when a campaign is viewed/displayed. Only one impression per user per 24 hours to avoid duplicates. Used for analytics and CTR calculation.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiBody({
@@ -168,7 +197,11 @@ export class EngagementController {
             city: { type: 'string', example: 'Mumbai' },
           },
         },
-        deviceType: { type: 'string', example: 'mobile', enum: ['mobile', 'tablet', 'desktop'] },
+        deviceType: {
+          type: 'string',
+          example: 'mobile',
+          enum: ['mobile', 'tablet', 'desktop'],
+        },
       },
     },
     examples: {
@@ -181,8 +214,8 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Impression recorded',
     schema: {
       example: {
@@ -190,7 +223,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async recordImpression(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -202,9 +238,10 @@ export class EngagementController {
   // ==================== CLICK ====================
 
   @Post('campaigns/:campaignId/click')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Record click',
-    description: 'Records when a user clicks on a campaign (e.g., clicking CTA button). Deducts from campaign budget ($0.50 per click). Updates CTR automatically.'
+    description:
+      'Records when a user clicks on a campaign (e.g., clicking CTA button). Deducts from campaign budget ($0.50 per click). Updates CTR automatically.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiBody({
@@ -219,7 +256,11 @@ export class EngagementController {
             city: { type: 'string', example: 'Mumbai' },
           },
         },
-        deviceType: { type: 'string', example: 'mobile', enum: ['mobile', 'tablet', 'desktop'] },
+        deviceType: {
+          type: 'string',
+          example: 'mobile',
+          enum: ['mobile', 'tablet', 'desktop'],
+        },
       },
     },
     examples: {
@@ -232,8 +273,8 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Click recorded and budget deducted',
     schema: {
       example: {
@@ -241,7 +282,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async recordClick(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -253,19 +297,28 @@ export class EngagementController {
   // ==================== CONVERSION ====================
 
   @Post('campaigns/:campaignId/conversion')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Record conversion',
-    description: 'Records a conversion event (purchase, signup, download, etc.). Sends notification to vendor. Used for measuring campaign ROI.'
+    description:
+      'Records a conversion event (purchase, signup, download, etc.). Sends notification to vendor. Used for measuring campaign ROI.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        amount: { type: 'number', example: 999.99, description: 'Conversion value/amount' },
-        type: { type: 'string', example: 'purchase', description: 'Type of conversion' },
-        metadata: { 
-          type: 'object', 
+        amount: {
+          type: 'number',
+          example: 999.99,
+          description: 'Conversion value/amount',
+        },
+        type: {
+          type: 'string',
+          example: 'purchase',
+          description: 'Type of conversion',
+        },
+        metadata: {
+          type: 'object',
           example: { productId: 'prod123', orderId: 'order456' },
           description: 'Additional conversion data',
         },
@@ -289,8 +342,8 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Conversion recorded',
     schema: {
       example: {
@@ -298,7 +351,10 @@ export class EngagementController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async recordConversion(
     @Param('campaignId') campaignId: string,
     @GetUser('userId') userId: string,
@@ -310,13 +366,14 @@ export class EngagementController {
   // ==================== ENGAGEMENT STATUS ====================
 
   @Get('campaigns/:campaignId/status')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get user engagement status',
-    description: 'Returns current user\'s engagement status with a campaign (liked, disliked, loved, saved). Used to show correct UI state.'
+    description:
+      "Returns current user's engagement status with a campaign (liked, disliked, loved, saved). Used to show correct UI state.",
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Returns user engagement status',
     schema: {
       example: {

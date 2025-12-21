@@ -39,7 +39,9 @@ async function bootstrap() {
   // Swagger Documentation
   const config = new DocumentBuilder()
     .setTitle('Local Ad Campaign Management API')
-    .setDescription('Complete API documentation for Campaign Management System with Vendor features')
+    .setDescription(
+      'Complete API documentation for Campaign Management System with Vendor features',
+    )
     .setVersion('1.0')
     .addTag('Campaigns', 'Campaign management endpoints')
     .addTag('Vendor', 'Vendor profile and transaction management')
@@ -71,7 +73,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  
+
   console.log(`
     ╔═══════════════════════════════════════════════════════╗
     ║                                                       ║

@@ -19,16 +19,18 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationGateway } from './notification/notification.gateway';
 import { AdminModule } from './admin/admin.module';
+import { LikeModule } from './like/like.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      load: [configuration],  // THIS IS CRITICAL - Load the configuration
-    }), 
-    PrismaModule, 
-    AuthModule, 
+      load: [configuration], // THIS IS CRITICAL - Load the configuration
+    }),
+    PrismaModule,
+    AuthModule,
     CampaignModule,
     NotificationModule,
     RazorpayModule,
@@ -37,7 +39,9 @@ import { AdminModule } from './admin/admin.module';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     EngagementModule,
-    AdminModule
+    AdminModule,
+    LikeModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

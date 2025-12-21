@@ -1,32 +1,32 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Query, 
-  Res, 
-  UseGuards, 
-  HttpCode, 
-  HttpStatus 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Res,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth, 
-  ApiQuery 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { ProteanService } from './services/protean.service';
-import { 
-  SignUpDto, 
-  SignInDto, 
-  RefreshTokenDto, 
+import {
+  SignUpDto,
+  SignInDto,
+  RefreshTokenDto,
   DigilockerCallbackDto,
   VerifyAadhaarDto,
-  AuthResponseDto, 
-  MessageResponseDto, 
+  AuthResponseDto,
+  MessageResponseDto,
   UserResponseDto,
   AadhaarVerificationResponseDto,
 } from './dto';
@@ -45,7 +45,7 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Register new user',
     description: `
 Register a new user account with email, phone, and Aadhaar number.
@@ -59,17 +59,17 @@ Register a new user account with email, phone, and Aadhaar number.
 **Note:** You must verify your Aadhaar via DigiLocker to access full features.
     `,
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User successfully registered with JWT tokens',
     type: AuthResponseDto,
   })
-  @ApiResponse({ 
-    status: 409, 
+  @ApiResponse({
+    status: 409,
     description: 'Email, phone, or Aadhaar already registered',
   })
-  @ApiResponse({ 
-    status: 400, 
+  @ApiResponse({
+    status: 400,
     description: 'Invalid input data',
   })
   async signUp(@Body() dto: SignUpDto): Promise<AuthResponseDto> {
@@ -79,7 +79,7 @@ Register a new user account with email, phone, and Aadhaar number.
   @Public()
   @Post('signin')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Sign in to account',
     description: `
 Authenticate user with email/phone and password.
@@ -91,13 +91,13 @@ Authenticate user with email/phone and password.
 Returns JWT access token (15 min) and refresh token (7 days).
     `,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Successfully authenticated with JWT tokens',
     type: AuthResponseDto,
   })
-  @ApiResponse({ 
-    status: 401, 
+  @ApiResponse({
+    status: 401,
     description: 'Invalid credentials',
   })
   async signIn(@Body() dto: SignInDto): Promise<AuthResponseDto> {
@@ -107,7 +107,7 @@ Returns JWT access token (15 min) and refresh token (7 days).
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Refresh access token',
     description: `
 Get a new access token using a valid refresh token.
@@ -120,13 +120,13 @@ Get a new access token using a valid refresh token.
 The old refresh token will be invalidated and a new one issued.
     `,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'New JWT tokens generated successfully',
     type: AuthResponseDto,
   })
-  @ApiResponse({ 
-    status: 401, 
+  @ApiResponse({
+    status: 401,
     description: 'Invalid or expired refresh token',
   })
   async refresh(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
@@ -137,7 +137,7 @@ The old refresh token will be invalidated and a new one issued.
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Logout user',
     description: `
 Logout current user by revoking their refresh token.
@@ -148,13 +148,13 @@ After logout:
 - User must sign in again to get new tokens
     `,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'User logged out successfully',
     type: MessageResponseDto,
   })
-  @ApiResponse({ 
-    status: 401, 
+  @ApiResponse({
+    status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
   async logout(@GetUser('userId') userId: string): Promise<MessageResponseDto> {
@@ -164,7 +164,7 @@ After logout:
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get user profile',
     description: `
 Retrieve detailed profile information of the authenticated user.
@@ -177,26 +177,28 @@ Retrieve detailed profile information of the authenticated user.
 - Account timestamps
     `,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'User profile retrieved successfully',
     type: UserResponseDto,
   })
-  @ApiResponse({ 
-    status: 401, 
+  @ApiResponse({
+    status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  @ApiResponse({ 
-    status: 404, 
+  @ApiResponse({
+    status: 404,
     description: 'User not found',
   })
-  async getProfile(@GetUser('userId') userId: string): Promise<UserResponseDto> {
+  async getProfile(
+    @GetUser('userId') userId: string,
+  ): Promise<UserResponseDto> {
     return this.authService.getUserProfile(userId);
   }
 
   @Public()
   @Get('digilocker/authorize')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Initiate DigiLocker Aadhaar verification',
     description: `
 Redirect user to DigiLocker for OAuth-based Aadhaar verification.
@@ -214,27 +216,24 @@ Redirect user to DigiLocker for OAuth-based Aadhaar verification.
 - This endpoint works in browser only (redirect-based)
     `,
   })
-  @ApiQuery({ 
-    name: 'state', 
-    required: false, 
+  @ApiQuery({
+    name: 'state',
+    required: false,
     description: 'Optional CSRF protection state parameter',
     example: 'random_state_string',
   })
-  @ApiResponse({ 
-    status: 302, 
+  @ApiResponse({
+    status: 302,
     description: 'Redirect to DigiLocker authorization page',
   })
-  initiateDigilockerAuth(
-    @Query('state') state: string, 
-    @Res() res: Response,
-  ) {
+  initiateDigilockerAuth(@Query('state') state: string, @Res() res: Response) {
     const authUrl = this.proteanService.getAuthorizationUrl(state);
     return res.redirect(authUrl);
   }
 
   @Public()
   @Get('digilocker/callback')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'DigiLocker OAuth callback handler',
     description: `
 Handle callback from DigiLocker after user authorization.
@@ -258,12 +257,12 @@ Handle callback from DigiLocker after user authorization.
 - Aadhaar number (masked)
     `,
   })
-  @ApiResponse({ 
-    status: 302, 
+  @ApiResponse({
+    status: 302,
     description: 'Redirect to frontend with verification status',
   })
-  @ApiResponse({ 
-    status: 400, 
+  @ApiResponse({
+    status: 400,
     description: 'Failed to authenticate with DigiLocker or fetch Aadhaar data',
   })
   async digilockerCallback(
@@ -271,17 +270,21 @@ Handle callback from DigiLocker after user authorization.
     @Res() res: Response,
   ) {
     try {
-      const result = await this.authService.handleDigilockerCallback(query.code);
-      
+      const result = await this.authService.handleDigilockerCallback(
+        query.code,
+      );
+
       // Redirect to frontend with success
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const redirectUrl = `${frontendUrl}/auth/aadhaar-success?verified=${result.verified}`;
-      
+
       return res.redirect(redirectUrl);
     } catch (error) {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const errorMessage = encodeURIComponent(error.message);
-      return res.redirect(`${frontendUrl}/auth/aadhaar-error?error=${errorMessage}`);
+      return res.redirect(
+        `${frontendUrl}/auth/aadhaar-error?error=${errorMessage}`,
+      );
     }
   }
 
@@ -289,7 +292,7 @@ Handle callback from DigiLocker after user authorization.
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Verify Aadhaar with access token (Direct API)',
     description: `
 Verify Aadhaar using DigiLocker access token obtained externally.
@@ -315,21 +318,21 @@ Verify Aadhaar using DigiLocker access token obtained externally.
 - Aadhaar verification status
     `,
   })
-  @ApiResponse({ 
-    status: 200, 
+  @ApiResponse({
+    status: 200,
     description: 'Aadhaar verified successfully',
     type: AadhaarVerificationResponseDto,
   })
-  @ApiResponse({ 
-    status: 400, 
+  @ApiResponse({
+    status: 400,
     description: 'Invalid access token or Aadhaar mismatch',
   })
-  @ApiResponse({ 
-    status: 401, 
+  @ApiResponse({
+    status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  @ApiResponse({ 
-    status: 404, 
+  @ApiResponse({
+    status: 404,
     description: 'User not found',
   })
   async verifyAadhaarWithToken(

@@ -52,7 +52,9 @@ export class ProteanService {
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('protean.apiKey')!;
     this.baseUrl = this.configService.get<string>('protean.baseUrl')!;
-    this.authorizationUrl = this.configService.get<string>('protean.authorizationUrl')!;
+    this.authorizationUrl = this.configService.get<string>(
+      'protean.authorizationUrl',
+    )!;
     this.clientId = this.configService.get<string>('protean.clientId')!;
     this.redirectUri = this.configService.get<string>('protean.redirectUri')!;
 
@@ -88,7 +90,7 @@ export class ProteanService {
   async getAccessToken(code: string): Promise<string> {
     try {
       this.logger.log('Exchanging authorization code for access token');
-      
+
       // Note: Adjust this based on actual Protean OAuth implementation
       const response = await this.axiosInstance.post('/oauth/token', {
         grant_type: 'authorization_code',
@@ -100,7 +102,10 @@ export class ProteanService {
       this.logger.log('Access token obtained successfully');
       return response.data.access_token;
     } catch (error) {
-      this.logger.error('Failed to get access token:', error.response?.data || error.message);
+      this.logger.error(
+        'Failed to get access token:',
+        error.response?.data || error.message,
+      );
       throw new HttpException(
         'Failed to get access token from DigiLocker',
         HttpStatus.BAD_REQUEST,
@@ -130,9 +135,13 @@ export class ProteanService {
       this.logger.log('e-Aadhaar data fetched successfully');
       return response.data;
     } catch (error) {
-      this.logger.error('Protean API Error:', error.response?.data || error.message);
+      this.logger.error(
+        'Protean API Error:',
+        error.response?.data || error.message,
+      );
       throw new HttpException(
-        error.response?.data?.message || 'Failed to fetch Aadhaar data from DigiLocker',
+        error.response?.data?.message ||
+          'Failed to fetch Aadhaar data from DigiLocker',
         error.response?.status || HttpStatus.BAD_REQUEST,
       );
     }
@@ -164,6 +173,9 @@ export class ProteanService {
   }
 
   private generateRandomState(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) +
+      Math.random().toString(36).substring(2, 15)
+    );
   }
 }
