@@ -19,6 +19,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationGateway } from './notification/notification.gateway';
 import { AdminModule } from './admin/admin.module';
+import { LikeModule } from './like/like.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AdminModule } from './admin/admin.module';
     EventEmitterModule.forRoot(),
     EngagementModule,
     AdminModule,
+    LikeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
