@@ -306,6 +306,7 @@ model Report {
   campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
   description String
   isSolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }
 
 enum Role {

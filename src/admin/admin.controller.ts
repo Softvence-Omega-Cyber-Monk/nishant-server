@@ -1,9 +1,11 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
+
 
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) { }
+
   @Get("admin-overview")
   async adminAnalytics() {
     try {
@@ -18,7 +20,6 @@ export class AdminController {
       throw error;
     }
   };
-
 
   @Get("all-vendor")
   async getAllVendor(
@@ -59,7 +60,6 @@ export class AdminController {
 
   };
 
-
   @Get("get-single-user-profile/:userId")
   async getSingleUserProfile(@Param("userId") userId: string) {
     try {
@@ -76,7 +76,69 @@ export class AdminController {
 
   };
 
+  @Get("getAllUserByAdmin")
+  async getAllUser(@Query("page") page: string, @Query("limit") limit: string) {
+    try {
+      const result = await this.adminService.getAllUser(Number(page) || 1, Number(limit));
+
+      return {
+        data: result
+      }
+
+    } catch (error) {
+      throw error
+    }
+  }
 
 
+  @Get("GetAllReportsByAdmin")
+  async getAllReports(
+    @Query("page") page: string,
+    @Query("limit") limit: string
+  ) {
+    try {
+      const result = await this.adminService.getAllReports(Number(page) || 1, Number(limit) || 20);
+      return {
+        succrss: true,
+        message: "Get All Reports by admin",
+        data: result
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  @Patch("update/report/:reportId")
+  async updateRerport(@Param("reportId") reportId: string) {
+    try {
+      const result = await this.adminService.updateReport(reportId);
+
+      return {
+        success: true,
+        message: "Report Status updated success",
+        data: result
+      }
+
+    } catch (error) {
+      throw error
+    }
+  };
+
+
+  @Get("admin/reveniewOverview")
+  async reveniewOverview() {
+    try {
+      const result = await this.adminService.reveniewOverview();
+
+      return {
+        success: true,
+        message: "Reveniew Overview Retrived successfully",
+        data: result
+      }
+
+    } catch (error) {
+      throw error;
+    }
+  }
 
 }
