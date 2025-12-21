@@ -145,7 +145,7 @@ export class CampaignScheduler {
 
     for (const campaign of campaigns) {
       const ctr = (campaign.clickCount / campaign.impressionCount) * 100;
-      
+
       await this.prisma.campaign.update({
         where: { campaignId: campaign.campaignId },
         data: { ctr },

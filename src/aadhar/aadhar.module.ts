@@ -4,6 +4,6 @@ import { AadharController } from './aadhar.controller';
 
 @Module({
   providers: [AadhaarService],
-  controllers: [AadharController]
+  controllers: [AadharController],
 })
 export class AadharModule {}

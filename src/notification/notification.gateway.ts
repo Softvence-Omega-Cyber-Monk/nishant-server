@@ -18,7 +18,9 @@ import { Logger } from '@nestjs/common';
   },
   namespace: 'notifications',
 })
-export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -32,9 +34,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth.token || 
-                    client.handshake.headers.authorization?.split(' ')[1];
-      
+      const token =
+        client.handshake.auth.token ||
+        client.handshake.headers.authorization?.split(' ')[1];
+
       if (!token) {
         this.logger.warn('Client attempted connection without token');
         client.disconnect();
@@ -60,10 +63,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
       client.join(userId);
 
       this.logger.log(`User ${userId} connected with socket ${client.id}`);
-      
+
       // Send connection confirmation
-      client.emit('connected', { 
-        userId, 
+      client.emit('connected', {
+        userId,
         message: 'Connected to notification service',
         timestamp: new Date().toISOString(),
       });
@@ -78,7 +81,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
     if (userId) {
       const sockets = this.userSockets.get(userId) || [];
       const updatedSockets = sockets.filter((id) => id !== client.id);
-      
+
       if (updatedSockets.length > 0) {
         this.userSockets.set(userId, updatedSockets);
       } else {
@@ -92,7 +95,7 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   @OnEvent('notification')
   handleNotificationEvent(payload: any) {
     const { userId, ...notification } = payload;
-    
+
     if (userId && this.userSockets.has(userId)) {
       this.server.to(userId).emit('notification', notification);
       this.logger.log(`Sent notification to user ${userId}`);

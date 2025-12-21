@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { RazorpayService } from '../razorpay/razorpay.service';
@@ -18,7 +23,11 @@ export class CampaignService {
     private notification: NotificationService,
   ) {}
 
-  async createCampaign(vendorId: string, dto: CreateCampaignDto, files: Express.Multer.File[]) {
+  async createCampaign(
+    vendorId: string,
+    dto: CreateCampaignDto,
+    files: Express.Multer.File[],
+  ) {
     // Verify vendor role
     const vendor = await this.prisma.user.findUnique({
       where: { userId: vendorId },
@@ -95,7 +104,8 @@ export class CampaignService {
         currency: order.currency,
       },
       demoMode: true, // Flag to indicate demo mode
-      message: '⚠️ DEMO MODE: Use the verify-payment endpoint with this order ID to activate campaign',
+      message:
+        '⚠️ DEMO MODE: Use the verify-payment endpoint with this order ID to activate campaign',
     };
   }
 
@@ -121,8 +131,10 @@ export class CampaignService {
       }
       */
       // ==================== END REAL MODE ====================
-      
-      console.log('⚠️ Non-demo order ID detected but verification skipped in demo mode');
+
+      console.log(
+        '⚠️ Non-demo order ID detected but verification skipped in demo mode',
+      );
     }
 
     // Update campaign
@@ -250,9 +262,10 @@ export class CampaignService {
     }
 
     // Calculate CTR
-    const ctr = campaign.impressionCount > 0 
-      ? (campaign.clickCount / campaign.impressionCount) * 100 
-      : 0;
+    const ctr =
+      campaign.impressionCount > 0
+        ? (campaign.clickCount / campaign.impressionCount) * 100
+        : 0;
 
     // Get location-based stats
     const locationStats = await this.getLocationStats(campaignId);
@@ -277,7 +290,7 @@ export class CampaignService {
 
     // Aggregate by location
     const stats: any = {};
-    
+
     impressions.forEach((imp: any) => {
       if (imp.location?.city) {
         const key = imp.location.city;
@@ -300,15 +313,24 @@ export class CampaignService {
 
     // Calculate CTR for each location
     Object.keys(stats).forEach((location) => {
-      stats[location].ctr = stats[location].impressions > 0
-        ? ((stats[location].clicks / stats[location].impressions) * 100).toFixed(2)
-        : 0;
+      stats[location].ctr =
+        stats[location].impressions > 0
+          ? (
+              (stats[location].clicks / stats[location].impressions) *
+              100
+            ).toFixed(2)
+          : 0;
     });
 
     return stats;
   }
 
-  async updateCampaign(campaignId: string, vendorId: string, dto: UpdateCampaignDto, files?: Express.Multer.File[]) {
+  async updateCampaign(
+    campaignId: string,
+    vendorId: string,
+    dto: UpdateCampaignDto,
+    files?: Express.Multer.File[],
+  ) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { campaignId },
     });
@@ -368,7 +390,11 @@ export class CampaignService {
     return this.updateCampaignStatus(campaignId, vendorId, 'RUNNING');
   }
 
-  private async updateCampaignStatus(campaignId: string, vendorId: string, status: string) {
+  private async updateCampaignStatus(
+    campaignId: string,
+    vendorId: string,
+    status: string,
+  ) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { campaignId },
     });
@@ -402,9 +428,7 @@ export class CampaignService {
 
     // Delete media from Cloudinary
     const media = campaign.mediaUrls as any[];
-    await Promise.all(
-      media.map((m) => this.cloudinary.deleteFile(m.publicId)),
-    );
+    await Promise.all(media.map((m) => this.cloudinary.deleteFile(m.publicId)));
 
     // Delete campaign
     await this.prisma.campaign.delete({
@@ -484,7 +508,10 @@ export class CampaignService {
       },
     });
 
-    const totalSpending = campaigns.reduce((sum, c) => sum + c.currentSpending, 0);
+    const totalSpending = campaigns.reduce(
+      (sum, c) => sum + c.currentSpending,
+      0,
+    );
     const totalBudget = campaigns.reduce((sum, c) => sum + c.budget, 0);
 
     return {
@@ -493,12 +520,19 @@ export class CampaignService {
         totalCampaigns: campaigns.length,
         activeCampaigns: campaigns.filter((c) => c.status === 'RUNNING').length,
         pausedCampaigns: campaigns.filter((c) => c.status === 'PAUSED').length,
-        completedCampaigns: campaigns.filter((c) => c.status === 'COMPLETED').length,
+        completedCampaigns: campaigns.filter((c) => c.status === 'COMPLETED')
+          .length,
         totalSpending,
         totalBudget,
-        totalImpressions: campaigns.reduce((sum, c) => sum + c.impressionCount, 0),
+        totalImpressions: campaigns.reduce(
+          (sum, c) => sum + c.impressionCount,
+          0,
+        ),
         totalClicks: campaigns.reduce((sum, c) => sum + c.clickCount, 0),
-        totalConversions: campaigns.reduce((sum, c) => sum + c.conversionCount, 0),
+        totalConversions: campaigns.reduce(
+          (sum, c) => sum + c.conversionCount,
+          0,
+        ),
       },
     };
   }
@@ -559,5 +593,47 @@ export class CampaignService {
         data: { campaignId: campaign.campaignId },
       });
     }
+  }
+
+  async getTargetedCampaigns(
+    user: { country?: string; state?: string; city?: string; age: number },
+    skip = 0,
+    take = 20,
+  ) {
+    const locationFilters: any[] = [];
+    if (user.country) {
+      locationFilters.push({
+        targetedLocation: { path: ['country'], equals: user.country },
+      });
+    }
+    if (user.state) {
+      locationFilters.push({
+        targetedLocation: { path: ['state'], equals: user.state },
+      });
+    }
+    if (user.city) {
+      locationFilters.push({
+        targetedLocation: { path: ['city'], equals: user.city },
+      });
+    }
+
+    // Get all matching campaigns first
+    const campaigns = await this.prisma.campaign.findMany({
+      where: {
+        status: 'RUNNING',
+        targetedAgeMin: { lte: user.age },
+        targetedAgeMax: { gte: user.age },
+        ...(locationFilters.length ? { AND: locationFilters } : {}),
+      },
+    });
+
+    // Shuffle campaigns randomly
+    for (let i = campaigns.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [campaigns[i], campaigns[j]] = [campaigns[j], campaigns[i]];
+    }
+
+    // Return pagination
+    return campaigns.slice(skip, skip + take);
   }
 }

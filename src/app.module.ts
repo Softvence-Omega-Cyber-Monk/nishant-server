@@ -25,10 +25,10 @@ import { AdminModule } from './admin/admin.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      load: [configuration],  // THIS IS CRITICAL - Load the configuration
-    }), 
-    PrismaModule, 
-    AuthModule, 
+      load: [configuration], // THIS IS CRITICAL - Load the configuration
+    }),
+    PrismaModule,
+    AuthModule,
     CampaignModule,
     NotificationModule,
     RazorpayModule,
@@ -37,7 +37,7 @@ import { AdminModule } from './admin/admin.module';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     EngagementModule,
-    AdminModule
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

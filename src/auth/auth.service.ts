@@ -1,10 +1,10 @@
-import { 
-  Injectable, 
-  UnauthorizedException, 
-  BadRequestException, 
-  ConflictException, 
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ConflictException,
   NotFoundException,
-  Logger 
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -114,7 +114,8 @@ export class AuthService {
       const accessToken = await this.proteanService.getAccessToken(code);
 
       // Fetch Aadhaar data from Protean API
-      const aadhaarData = await this.proteanService.getEAadhaarData(accessToken);
+      const aadhaarData =
+        await this.proteanService.getEAadhaarData(accessToken);
 
       // Extract user data
       const uidData = aadhaarData.Certificate.CertificateData.KycRes.UidData;
@@ -182,7 +183,9 @@ export class AuthService {
       this.logger.log(`Manual Aadhaar verification for user: ${userId}`);
 
       // Fetch Aadhaar data
-      const aadhaarData = await this.proteanService.verifyAadhaarWithToken(dto.accessToken);
+      const aadhaarData = await this.proteanService.verifyAadhaarWithToken(
+        dto.accessToken,
+      );
 
       const uidData = aadhaarData.Certificate.CertificateData.KycRes.UidData;
       const poi = uidData.Poi;

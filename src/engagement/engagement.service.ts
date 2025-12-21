@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { CampaignService } from '../campaign/campaign.service';
@@ -206,7 +210,11 @@ export class EngagementService {
   }
 
   // ==================== IMPRESSION ====================
-  async recordImpression(campaignId: string, userId: string, metadata?: { location?: any; deviceType?: string }) {
+  async recordImpression(
+    campaignId: string,
+    userId: string,
+    metadata?: { location?: any; deviceType?: string },
+  ) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { campaignId },
     });
@@ -244,7 +252,8 @@ export class EngagementService {
 
       // Update CTR
       if (updatedCampaign.impressionCount > 0) {
-        const ctr = (updatedCampaign.clickCount / updatedCampaign.impressionCount) * 100;
+        const ctr =
+          (updatedCampaign.clickCount / updatedCampaign.impressionCount) * 100;
         await this.prisma.campaign.update({
           where: { campaignId },
           data: { ctr },
@@ -256,7 +265,11 @@ export class EngagementService {
   }
 
   // ==================== CLICK ====================
-  async recordClick(campaignId: string, userId: string, metadata?: { location?: any; deviceType?: string }) {
+  async recordClick(
+    campaignId: string,
+    userId: string,
+    metadata?: { location?: any; deviceType?: string },
+  ) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { campaignId },
     });
@@ -281,7 +294,8 @@ export class EngagementService {
 
     // Update CTR
     if (updatedCampaign.impressionCount > 0) {
-      const ctr = (updatedCampaign.clickCount / updatedCampaign.impressionCount) * 100;
+      const ctr =
+        (updatedCampaign.clickCount / updatedCampaign.impressionCount) * 100;
       await this.prisma.campaign.update({
         where: { campaignId },
         data: { ctr },

@@ -37,6 +37,7 @@ import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { PaymentVerificationDto } from './dto/payment-verification.dto';
+import { CampaignQueryDto } from './dto/Campaign-query-dto';
 
 @ApiTags('Campaigns')
 @Controller('campaigns')
@@ -49,75 +50,88 @@ export class CampaignController {
   @Roles('VENDOR')
   @UseInterceptors(FilesInterceptor('mediaFiles', 10))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create new campaign',
-    description: 'Creates a new advertising campaign with media files. Returns Razorpay order details for payment. Campaign will be activated after successful payment verification.'
+    description:
+      'Creates a new advertising campaign with media files. Returns Razorpay order details for payment. Campaign will be activated after successful payment verification.',
   })
   @ApiBody({
     schema: {
       type: 'object',
-      required: ['title', 'description', 'mediaFiles', 'targetedLocation', 'budget', 'startDate', 'endDate'],
+      required: [
+        'title',
+        'description',
+        'mediaFiles',
+        'targetedLocation',
+        'budget',
+        'startDate',
+        'endDate',
+      ],
       properties: {
-        title: { 
-          type: 'string', 
-          example: 'Summer Sale 2024',
-          description: 'Campaign title'
-        },
-        description: { 
-          type: 'string', 
-          example: 'Amazing summer sale with 50% off on all products',
-          description: 'Detailed campaign description'
-        },
-        mediaFiles: { 
-          type: 'array', 
-          items: { type: 'string', format: 'binary' },
-          description: 'At least one media file required (images: jpeg, jpg, png, gif, webp | videos: mp4, avi, mov, wmv)',
-          minItems: 1,
-          maxItems: 10
-        },
-        targetedLocation: { 
+        title: {
           type: 'string',
-          example: '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}',
-          description: 'JSON string with geographical targeting (country, state, city, radius)'
+          example: 'Summer Sale 2024',
+          description: 'Campaign title',
         },
-        targetedAgeMin: { 
-          type: 'number', 
+        description: {
+          type: 'string',
+          example: 'Amazing summer sale with 50% off on all products',
+          description: 'Detailed campaign description',
+        },
+        mediaFiles: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description:
+            'At least one media file required (images: jpeg, jpg, png, gif, webp | videos: mp4, avi, mov, wmv)',
+          minItems: 1,
+          maxItems: 10,
+        },
+        targetedLocation: {
+          type: 'string',
+          example:
+            '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}',
+          description:
+            'JSON string with geographical targeting (country, state, city, radius)',
+        },
+        targetedAgeMin: {
+          type: 'number',
           example: 18,
           minimum: 13,
           maximum: 100,
-          description: 'Minimum target age (optional)'
+          description: 'Minimum target age (optional)',
         },
-        targetedAgeMax: { 
-          type: 'number', 
+        targetedAgeMax: {
+          type: 'number',
           example: 45,
           minimum: 13,
           maximum: 100,
-          description: 'Maximum target age (optional)'
+          description: 'Maximum target age (optional)',
         },
-        budget: { 
-          type: 'number', 
+        budget: {
+          type: 'number',
           example: 10000,
           minimum: 100,
-          description: 'Campaign budget in INR'
+          description: 'Campaign budget in INR',
         },
-        startDate: { 
-          type: 'string', 
+        startDate: {
+          type: 'string',
           format: 'date-time',
           example: '2024-12-20T00:00:00Z',
-          description: 'Campaign start date and time (ISO 8601)'
+          description: 'Campaign start date and time (ISO 8601)',
         },
-        endDate: { 
-          type: 'string', 
+        endDate: {
+          type: 'string',
           format: 'date-time',
           example: '2024-12-31T23:59:59Z',
-          description: 'Campaign end date and time (ISO 8601)'
+          description: 'Campaign end date and time (ISO 8601)',
         },
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.CREATED, 
-    description: 'Campaign created successfully. Returns campaign details and Razorpay order for payment.',
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description:
+      'Campaign created successfully. Returns campaign details and Razorpay order for payment.',
     schema: {
       example: {
         campaign: {
@@ -137,8 +151,14 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid input or missing required fields' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Only vendors can create campaigns' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input or missing required fields',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Only vendors can create campaigns',
+  })
   async createCampaign(
     @GetUser('userId') userId: string,
     @Body() body: any,
@@ -146,8 +166,9 @@ export class CampaignController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
-          new FileTypeValidator({ 
-            fileType: /(image\/(jpeg|jpg|png|gif|webp)|video\/(mp4|avi|mov|wmv))/,
+          new FileTypeValidator({
+            fileType:
+              /(image\/(jpeg|jpg|png|gif|webp)|video\/(mp4|avi|mov|wmv))/,
           }),
         ],
         fileIsRequired: false, // We'll validate in the method
@@ -163,36 +184,75 @@ export class CampaignController {
     // Parse targetedLocation from JSON string
     let targetedLocation;
     try {
-      targetedLocation = typeof body.targetedLocation === 'string' 
-        ? JSON.parse(body.targetedLocation) 
-        : body.targetedLocation;
+      targetedLocation =
+        typeof body.targetedLocation === 'string'
+          ? JSON.parse(body.targetedLocation)
+          : body.targetedLocation;
     } catch (error) {
-      throw new BadRequestException('Invalid targetedLocation format. Must be valid JSON string.');
+      throw new BadRequestException(
+        'Invalid targetedLocation format. Must be valid JSON string.',
+      );
     }
 
     // Validate required fields
-    if (!body.title || !body.description || !body.budget || !body.startDate || !body.endDate) {
-      throw new BadRequestException('Missing required fields: title, description, budget, startDate, endDate');
+    if (
+      !body.title ||
+      !body.description ||
+      !body.budget ||
+      !body.startDate ||
+      !body.endDate
+    ) {
+      throw new BadRequestException(
+        'Missing required fields: title, description, budget, startDate, endDate',
+      );
     }
 
     // Convert numeric strings to numbers
     const dto: CreateCampaignDto = {
       ...body,
       targetedLocation,
-      targetedAgeMin: body.targetedAgeMin ? Number(body.targetedAgeMin) : undefined,
-      targetedAgeMax: body.targetedAgeMax ? Number(body.targetedAgeMax) : undefined,
+      targetedAgeMin: body.targetedAgeMin
+        ? Number(body.targetedAgeMin)
+        : undefined,
+      targetedAgeMax: body.targetedAgeMax
+        ? Number(body.targetedAgeMax)
+        : undefined,
       budget: Number(body.budget),
       mediaFiles: files,
     };
 
     return this.campaignService.createCampaign(userId, dto, files);
   }
-
+  @Get('feed-ads')
+  @Roles('VENDOR', 'USER')
+  @ApiOperation({
+    summary: 'Get targeted campaign ads feed',
+    description:
+      'Fetches a randomized feed of active campaigns (ads) to the logged-in user based on age and budget availability.',
+  })
+  async getFeed(
+    @GetUser()
+    user: {
+      userId: string;
+      age: number;
+      country: string;
+      state?: string;
+      city?: string;
+    },
+    @Query() query: CampaignQueryDto,
+  ) {
+    return this.campaignService.getTargetedCampaigns(
+      user,
+      Number(query.skip),
+      Number(query.take),
+    );
+  }
   @Post('verify-payment')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Verify Razorpay payment',
-    description: 'Verifies Razorpay payment signature and activates the campaign. Call this after successful payment on frontend.'
+    description:
+      'Verifies Razorpay payment signature and activates the campaign. Call this after successful payment on frontend.',
   })
   @ApiBody({
     type: PaymentVerificationDto,
@@ -208,8 +268,8 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Payment verified and campaign activated',
     schema: {
       example: {
@@ -220,43 +280,49 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid payment signature' })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid payment signature',
+  })
   async verifyPayment(@Body() dto: PaymentVerificationDto) {
     return this.campaignService.verifyPaymentAndActivateCampaign(dto);
   }
 
   @Get('my-campaigns')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get vendor campaigns',
-    description: 'Retrieves all campaigns created by the authenticated vendor with engagement statistics.'
+    description:
+      'Retrieves all campaigns created by the authenticated vendor with engagement statistics.',
   })
-  @ApiQuery({ 
-    name: 'status', 
-    required: false, 
-    enum: ['RUNNING', 'PAUSED', 'COMPLETED'], 
-    description: 'Filter by campaign status' 
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['RUNNING', 'PAUSED', 'COMPLETED'],
+    description: 'Filter by campaign status',
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Returns list of campaigns with stats',
     schema: {
-      example: [{
-        campaignId: 'uuid-here',
-        title: 'Summer Sale 2024',
-        status: 'RUNNING',
-        budget: 10000,
-        currentSpending: 2500,
-        remainingSpending: 7500,
-        impressionCount: 5000,
-        clickCount: 250,
-        ctr: 5.0,
-        _count: {
-          likes: 120,
-          comments: 45,
-          shares: 30,
+      example: [
+        {
+          campaignId: 'uuid-here',
+          title: 'Summer Sale 2024',
+          status: 'RUNNING',
+          budget: 10000,
+          currentSpending: 2500,
+          remainingSpending: 7500,
+          impressionCount: 5000,
+          clickCount: 250,
+          ctr: 5.0,
+          _count: {
+            likes: 120,
+            comments: 45,
+            shares: 30,
+          },
         },
-      }],
+      ],
     },
   })
   async getVendorCampaigns(
@@ -268,12 +334,13 @@ export class CampaignController {
 
   @Get('stats')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get campaign statistics',
-    description: 'Retrieves comprehensive statistics for all campaigns including total spending, impressions, clicks, conversions.'
+    description:
+      'Retrieves comprehensive statistics for all campaigns including total spending, impressions, clicks, conversions.',
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Returns aggregated campaign statistics',
     schema: {
       example: {
@@ -298,29 +365,28 @@ export class CampaignController {
 
   @Get(':campaignId')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get campaign details',
-    description: 'Retrieves detailed information about a specific campaign including all comments, engagement metrics, and location-based statistics.'
+    description:
+      'Retrieves detailed information about a specific campaign including all comments, engagement metrics, and location-based statistics.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Returns detailed campaign information',
     schema: {
       example: {
         campaignId: 'uuid-here',
         title: 'Summer Sale 2024',
         description: 'Campaign description',
-        mediaUrls: [
-          { type: 'image', url: 'https://...', publicId: 'xxx' }
-        ],
+        mediaUrls: [{ type: 'image', url: 'https://...', publicId: 'xxx' }],
         status: 'RUNNING',
         budget: 10000,
         currentSpending: 2500,
         ctr: '5.00',
         locationStats: {
-          'Mumbai': { impressions: 1000, clicks: 50, ctr: '5.00' },
-          'Delhi': { impressions: 800, clicks: 40, ctr: '5.00' },
+          Mumbai: { impressions: 1000, clicks: 50, ctr: '5.00' },
+          Delhi: { impressions: 800, clicks: 40, ctr: '5.00' },
         },
         comments: [],
         _count: {
@@ -330,8 +396,14 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied to this campaign' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Access denied to this campaign',
+  })
   async getCampaignDetails(
     @GetUser('userId') userId: string,
     @Param('campaignId') campaignId: string,
@@ -343,9 +415,10 @@ export class CampaignController {
   @Roles('VENDOR')
   @UseInterceptors(FilesInterceptor('mediaFiles', 10))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Update campaign',
-    description: 'Updates campaign details. Can update text fields, dates, targeting, and replace media files.'
+    description:
+      'Updates campaign details. Can update text fields, dates, targeting, and replace media files.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiBody({
@@ -354,15 +427,15 @@ export class CampaignController {
       properties: {
         title: { type: 'string', example: 'Updated Title' },
         description: { type: 'string', example: 'Updated description' },
-        mediaFiles: { 
-          type: 'array', 
+        mediaFiles: {
+          type: 'array',
           items: { type: 'string', format: 'binary' },
-          description: 'Replace media files (optional)'
+          description: 'Replace media files (optional)',
         },
-        targetedLocation: { 
+        targetedLocation: {
           type: 'string',
           example: '{"country":"India","city":"Delhi"}',
-          description: 'Update geographical targeting (optional)'
+          description: 'Update geographical targeting (optional)',
         },
         targetedAgeMin: { type: 'number', example: 20 },
         targetedAgeMax: { type: 'number', example: 50 },
@@ -372,9 +445,18 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Campaign updated successfully' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied to this campaign' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Campaign updated successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Access denied to this campaign',
+  })
   async updateCampaign(
     @GetUser('userId') userId: string,
     @Param('campaignId') campaignId: string,
@@ -383,12 +465,13 @@ export class CampaignController {
   ) {
     // Parse targetedLocation if provided
     let dto: UpdateCampaignDto = { ...body };
-    
+
     if (body.targetedLocation) {
       try {
-        dto.targetedLocation = typeof body.targetedLocation === 'string' 
-          ? JSON.parse(body.targetedLocation) 
-          : body.targetedLocation;
+        dto.targetedLocation =
+          typeof body.targetedLocation === 'string'
+            ? JSON.parse(body.targetedLocation)
+            : body.targetedLocation;
       } catch (error) {
         throw new BadRequestException('Invalid targetedLocation format');
       }
@@ -404,13 +487,14 @@ export class CampaignController {
 
   @Put(':campaignId/pause')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Pause campaign',
-    description: 'Pauses a running campaign. No impressions or clicks will be recorded while paused.'
+    description:
+      'Pauses a running campaign. No impressions or clicks will be recorded while paused.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Campaign paused successfully',
     schema: {
       example: {
@@ -420,7 +504,10 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async pauseCampaign(
     @GetUser('userId') userId: string,
     @Param('campaignId') campaignId: string,
@@ -430,13 +517,14 @@ export class CampaignController {
 
   @Put(':campaignId/resume')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Resume campaign',
-    description: 'Resumes a paused campaign. Campaign will start recording impressions and clicks again.'
+    description:
+      'Resumes a paused campaign. Campaign will start recording impressions and clicks again.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Campaign resumed successfully',
     schema: {
       example: {
@@ -446,7 +534,10 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async resumeCampaign(
     @GetUser('userId') userId: string,
     @Param('campaignId') campaignId: string,
@@ -456,13 +547,14 @@ export class CampaignController {
 
   @Delete(':campaignId')
   @Roles('VENDOR')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Delete campaign',
-    description: 'Permanently deletes a campaign and all associated media files from Cloudinary.'
+    description:
+      'Permanently deletes a campaign and all associated media files from Cloudinary.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Campaign deleted successfully',
     schema: {
       example: {
@@ -470,8 +562,14 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Access denied to this campaign' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Access denied to this campaign',
+  })
   async deleteCampaign(
     @GetUser('userId') userId: string,
     @Param('campaignId') campaignId: string,
@@ -481,9 +579,10 @@ export class CampaignController {
 
   @Post(':campaignId/comments')
   @Roles('VENDOR', 'USER')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Add comment to campaign',
-    description: 'Adds a comment to a campaign. Can also reply to existing comments by providing parentId.'
+    description:
+      'Adds a comment to a campaign. Can also reply to existing comments by providing parentId.',
   })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @ApiBody({
@@ -499,8 +598,8 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ 
-    status: HttpStatus.CREATED, 
+  @ApiResponse({
+    status: HttpStatus.CREATED,
     description: 'Comment added successfully',
     schema: {
       example: {
@@ -517,7 +616,10 @@ export class CampaignController {
       },
     },
   })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Campaign not found' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Campaign not found',
+  })
   async addComment(
     @GetUser('userId') userId: string,
     @Param('campaignId') campaignId: string,
