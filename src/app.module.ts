@@ -20,6 +20,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationGateway } from './notification/notification.gateway';
 import { AdminModule } from './admin/admin.module';
 import { LikeModule } from './like/like.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { LikeModule } from './like/like.module';
     EngagementModule,
     AdminModule,
     LikeModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
