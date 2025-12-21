@@ -136,6 +136,7 @@ exports.Prisma.UserScalarFieldEnum = {
   address: 'address',
   dateOfBirth: 'dateOfBirth',
   gender: 'gender',
+  activeStatus: 'activeStatus',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   followerCount: 'followerCount',
@@ -315,6 +316,12 @@ exports.Role = exports.$Enums.Role = {
   ADMIN: 'ADMIN',
   USER: 'USER',
   VENDOR: 'VENDOR'
+};
+
+exports.UserActiveStatus = exports.$Enums.UserActiveStatus = {
+  ACTIVE: 'ACTIVE',
+  BANNED: 'BANNED',
+  FLAGGED: 'FLAGGED'
 };
 
 exports.CampaignStatus = exports.$Enums.CampaignStatus = {

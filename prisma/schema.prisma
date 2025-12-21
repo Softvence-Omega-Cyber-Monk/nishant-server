@@ -3,113 +3,119 @@
 
 generator client {
   provider      = "prisma-client-js"
-  output   = "../src/generated"
+  output        = "../src/generated"
   binaryTargets = ["native"]
 }
 
 datasource db {
   provider = "postgresql"
+}
 
+enum UserActiveStatus {
+  ACTIVE
+  BANNED
+  FLAGGED
 }
 
 model User {
-  userId          String   @id @default(uuid())
-  role            Role     @default(USER)
+  userId          String           @id @default(uuid())
+  role            Role             @default(USER)
   fullName        String
-  phone           String   @unique
-  email           String   @unique
+  phone           String           @unique
+  email           String           @unique
   password        String
-  aadharNumber    String   @unique
+  aadharNumber    String           @unique
   refreshToken    String?
-  aadhaarVerified Boolean  @default(false)
+  aadhaarVerified Boolean          @default(false)
   maskedAadhaar   String?
   aadhaarData     Json?
-  photo           String?  @db.Text
+  photo           String?          @db.Text
   address         Json?
   dateOfBirth     DateTime?
   gender          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  activeStatus    UserActiveStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   // Vendor specific fields
-  followerCount   Int?     @default(0)
-  description     String?  @db.Text
-  category        String?
-  location        String?
-  instagramUrl    String?
-  facebookUrl     String?
-  websiteUrl      String?
+  followerCount Int?    @default(0)
+  description   String? @db.Text
+  category      String?
+  location      String?
+  instagramUrl  String?
+  facebookUrl   String?
+  websiteUrl    String?
 
   // Relations
-  campaigns       Campaign[]
-  likes           Like[]
-  dislikes        Dislike[]
-  loves           Love[]
-  comments        Comment[]
-  shares          Share[]
-  saves           Save[]
-  impressions     Impression[]
-  clicks          Click[]
-  transactions    Transaction[]
+  campaigns            Campaign[]
+  likes                Like[]
+  dislikes             Dislike[]
+  loves                Love[]
+  comments             Comment[]
+  shares               Share[]
+  saves                Save[]
+  impressions          Impression[]
+  clicks               Click[]
+  transactions         Transaction[]
   notificationSettings NotificationSettings?
 
   @@map("users")
 }
 
 model Campaign {
-  campaignId          String   @id @default(uuid())
-  vendorId            String
-  vendor              User     @relation(fields: [vendorId], references: [userId], onDelete: Cascade)
-  
-  title               String
-  description         String   @db.Text
-  mediaUrls           Json     // Array of {type: 'image'|'video', url: string, publicId: string}
-  
-  targetedLocation    Json     // {country, state, city, radius}
-  targetedAgeMin      Int?
-  targetedAgeMax      Int?
-  
-  budget              Float
-  currentSpending     Float    @default(0)
-  remainingSpending   Float
-  
-  startDate           DateTime
-  endDate             DateTime
-  status              CampaignStatus @default(PAUSED)
-  
+  campaignId String @id @default(uuid())
+  vendorId   String
+  vendor     User   @relation(fields: [vendorId], references: [userId], onDelete: Cascade)
+
+  title       String
+  description String @db.Text
+  mediaUrls   Json // Array of {type: 'image'|'video', url: string, publicId: string}
+
+  targetedLocation Json // {country, state, city, radius}
+  targetedAgeMin   Int?
+  targetedAgeMax   Int?
+
+  budget            Float
+  currentSpending   Float @default(0)
+  remainingSpending Float
+
+  startDate DateTime
+  endDate   DateTime
+  status    CampaignStatus @default(PAUSED)
+
   // Engagement metrics
-  likeCount           Int      @default(0)
-  dislikeCount        Int      @default(0)
-  loveCount           Int      @default(0)
-  commentCount        Int      @default(0)
-  shareCount          Int      @default(0)
-  saveCount           Int      @default(0)
-  impressionCount     Int      @default(0)
-  clickCount          Int      @default(0)
-  ctr                 Float    @default(0) // Click-through rate
-  conversionCount     Int      @default(0)
-  
+  likeCount       Int   @default(0)
+  dislikeCount    Int   @default(0)
+  loveCount       Int   @default(0)
+  commentCount    Int   @default(0)
+  shareCount      Int   @default(0)
+  saveCount       Int   @default(0)
+  impressionCount Int   @default(0)
+  clickCount      Int   @default(0)
+  ctr             Float @default(0) // Click-through rate
+  conversionCount Int   @default(0)
+
   // Payment info
-  paymentId           String?
-  razorpayOrderId     String?
-  razorpayPaymentId   String?
-  razorpaySignature   String?
-  paymentStatus       PaymentStatus @default(PENDING)
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  paymentId         String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  paymentStatus     PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  likes               Like[]
-  dislikes            Dislike[]
-  loves               Love[]
-  comments            Comment[]
-  shares              Share[]
-  saves               Save[]
-  impressions         Impression[]
-  clicks              Click[]
-  conversions         Conversion[]
-  transactions        Transaction[]
+  likes        Like[]
+  dislikes     Dislike[]
+  loves        Love[]
+  comments     Comment[]
+  shares       Share[]
+  saves        Save[]
+  impressions  Impression[]
+  clicks       Click[]
+  conversions  Conversion[]
+  transactions Transaction[]
 
   @@index([vendorId])
   @@index([status])
@@ -117,12 +123,12 @@ model Campaign {
 }
 
 model Like {
-  likeId      String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  likeId     String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@unique([campaignId, userId])
   @@index([campaignId])
@@ -131,12 +137,12 @@ model Like {
 }
 
 model Dislike {
-  dislikeId   String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  dislikeId  String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@unique([campaignId, userId])
   @@index([campaignId])
@@ -145,12 +151,12 @@ model Dislike {
 }
 
 model Love {
-  loveId      String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  loveId     String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@unique([campaignId, userId])
   @@index([campaignId])
@@ -159,17 +165,17 @@ model Love {
 }
 
 model Comment {
-  commentId   String    @id @default(uuid())
-  campaignId  String
-  campaign    Campaign  @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  content     String    @db.Text
-  parentId    String?
-  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [commentId], onDelete: Cascade)
-  replies     Comment[] @relation("CommentReplies")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  commentId  String    @id @default(uuid())
+  campaignId String
+  campaign   Campaign  @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  content    String    @db.Text
+  parentId   String?
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [commentId], onDelete: Cascade)
+  replies    Comment[] @relation("CommentReplies")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([campaignId])
   @@index([userId])
@@ -178,12 +184,12 @@ model Comment {
 }
 
 model Share {
-  shareId     String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  shareId    String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@index([campaignId])
   @@index([userId])
@@ -191,12 +197,12 @@ model Share {
 }
 
 model Save {
-  saveId      String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  createdAt   DateTime @default(now())
+  saveId     String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  createdAt  DateTime @default(now())
 
   @@unique([campaignId, userId])
   @@index([campaignId])
@@ -210,7 +216,7 @@ model Impression {
   campaign     Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
   userId       String
   user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  location     Json?    // {country, state, city}
+  location     Json? // {country, state, city}
   deviceType   String?
   createdAt    DateTime @default(now())
 
@@ -220,14 +226,14 @@ model Impression {
 }
 
 model Click {
-  clickId     String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  location    Json?    // {country, state, city}
-  deviceType  String?
-  createdAt   DateTime @default(now())
+  clickId    String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  location   Json? // {country, state, city}
+  deviceType String?
+  createdAt  DateTime @default(now())
 
   @@index([campaignId])
   @@index([userId])
@@ -240,7 +246,7 @@ model Conversion {
   campaign     Campaign @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
   userId       String
   amount       Float?
-  type         String?  // 'purchase', 'signup', 'download', etc.
+  type         String? // 'purchase', 'signup', 'download', etc.
   metadata     Json?
   createdAt    DateTime @default(now())
 
@@ -249,26 +255,26 @@ model Conversion {
 }
 
 model Transaction {
-  transactionId       String   @id @default(uuid())
-  userId              String
-  user                User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  campaignId          String?
-  campaign            Campaign? @relation(fields: [campaignId], references: [campaignId], onDelete: SetNull)
-  
-  amount              Float
-  type                TransactionType
-  status              TransactionStatus
-  
-  razorpayOrderId     String?
-  razorpayPaymentId   String?
-  razorpaySignature   String?
-  
-  paymentMethod       String?
-  description         String?
-  metadata            Json?
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  transactionId String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  campaignId    String?
+  campaign      Campaign? @relation(fields: [campaignId], references: [campaignId], onDelete: SetNull)
+
+  amount Float
+  type   TransactionType
+  status TransactionStatus
+
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  paymentMethod String?
+  description   String?
+  metadata      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([campaignId])
@@ -276,17 +282,17 @@ model Transaction {
 }
 
 model NotificationSettings {
-  settingsId                    String   @id @default(uuid())
-  userId                        String   @unique
-  user                          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  
-  campaignPerformanceUpdates    Boolean  @default(true)
-  lowBudgetAlert                Boolean  @default(true)
-  paymentTransactionUpdates     Boolean  @default(true)
-  liveCampaignUpdates           Boolean  @default(true)
-  
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
+  settingsId String @id @default(uuid())
+  userId     String @unique
+  user       User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  campaignPerformanceUpdates Boolean @default(true)
+  lowBudgetAlert             Boolean @default(true)
+  paymentTransactionUpdates  Boolean @default(true)
+  liveCampaignUpdates        Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("notification_settings")
 }
