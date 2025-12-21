@@ -231,9 +231,6 @@ export class AdminService {
                 },
                 {
                     aadharNumber: { contains: search, mode: "insensitive" }
-                },
-                {
-                    address: { contains: search, mode: "insensitive" }
                 }
             ]
         }
@@ -279,5 +276,208 @@ export class AdminService {
         return result
 
     }
+
+
+    async getAllReports(page: number, limit: number) {
+        const totalReport = await this.Prisma.report.count({
+            where: {
+                isSolved: false
+            }
+        });
+
+        const skip = (page - 1) * limit;
+
+        const totalPage = Math.ceil(totalReport / limit);
+
+
+        const data = await this.Prisma.report.findMany({
+            where: {
+                isSolved: false,
+            },
+            include: {
+                campaign: true,
+                user: true
+            },
+            skip,
+            take: limit
+        });
+
+        return {
+            meta: {
+                totalReport,
+                totalPage,
+                page,
+                limit
+            },
+            data
+        }
+    };
+
+
+    async updateReport(reportId: string) {
+        const updateReport = await this.Prisma.report.update({
+            where: {
+                reportId: reportId
+            },
+            data: {
+                isSolved: true
+            }
+        });
+        return updateReport
+    };
+
+    async reveniewTrendAndTopTenCampain() {
+        const now = new Date();
+
+        const monthlyRevenue: any = [];
+
+        for (let i = 11; i >= 0; i--) {
+            const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+            const monthRevenue = await this.Prisma.campaign.aggregate({
+                where: {
+                    paymentStatus: "SUCCESS",
+                    createdAt: {
+                        gte: start,
+                        lt: end,
+                    },
+                },
+                _sum: {
+                    budget: true,
+                },
+            });
+
+            monthlyRevenue.push({
+                month: start.toLocaleString("default", { month: "short", year: "numeric" }),
+                revenue: monthRevenue._sum.budget || 0,
+            });
+        }
+
+        const revenueWithGrowth = monthlyRevenue.map((item, index, arr) => {
+            if (index === 0) return { ...item, growthPercentage: null, trend: "NO_CHANGE" };
+
+            const previousRevenue = arr[index - 1].revenue;
+            const currentRevenue = item.revenue;
+
+            let percentage = 0;
+            let trend: "UP" | "DOWN" | "NO_CHANGE" = "NO_CHANGE";
+
+            if (previousRevenue > 0) {
+                percentage = ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+                trend = percentage > 0 ? "UP" : percentage < 0 ? "DOWN" : "NO_CHANGE";
+            } else if (currentRevenue > 0) {
+                percentage = 100;
+                trend = "UP";
+            }
+
+            return {
+                ...item,
+                growthPercentage: Number(percentage.toFixed(2)),
+                trend,
+            };
+        });
+
+        const topCampaigns = await this.Prisma.campaign.findMany({
+            where: { paymentStatus: "SUCCESS" },
+            orderBy: { impressionCount: "desc" },
+            take: 10,
+            select: {
+                campaignId: true,
+                title: true,
+                impressionCount: true,
+                budget: true,
+                createdAt: true,
+            },
+        });
+
+        return {
+            monthlyRevenue: revenueWithGrowth,
+            topCampaigns,
+        };
+    }
+
+    async reveniewOverview() {
+
+        const total = await this.Prisma.campaign.aggregate({
+            where: {
+                paymentStatus: "SUCCESS"
+            },
+            _sum: {
+                budget: true
+            }
+        });
+
+
+        const totalReveniew = total._sum.budget || 0;
+
+        const now = new Date();
+
+        // Last 30 days
+        const last30Days = new Date();
+        last30Days.setDate(now.getDate() - 30);
+
+        // Previous 30 days (30–60 days ago)
+        const prev30Days = new Date();
+        prev30Days.setDate(now.getDate() - 60);
+
+        // Last 30 days revenue
+        const currentRevenue = await this.Prisma.campaign.aggregate({
+            where: {
+                paymentStatus: "SUCCESS",
+                createdAt: {
+                    gte: last30Days,
+                    lte: now,
+                },
+            },
+            _sum: {
+                budget: true,
+            },
+        });
+
+        // Previous 30 days revenue
+        const previousRevenue = await this.Prisma.campaign.aggregate({
+            where: {
+                paymentStatus: "SUCCESS",
+                createdAt: {
+                    gte: prev30Days,
+                    lt: last30Days,
+                },
+            },
+            _sum: {
+                budget: true,
+            },
+        });
+
+        const current = currentRevenue._sum.budget || 0;
+        const previous = previousRevenue._sum.budget || 0;
+
+        // Percentage calculation
+        let percentage = 0;
+        let trend: "UP" | "DOWN" | "NO_CHANGE" = "NO_CHANGE";
+
+        if (previous > 0) {
+            percentage = ((current - previous) / previous) * 100;
+            trend = percentage > 0 ? "UP" : percentage < 0 ? "DOWN" : "NO_CHANGE";
+        } else if (current > 0) {
+            percentage = 100;
+            trend = "UP";
+        }
+
+        const groth = {
+            last30DaysRevenue: current,
+            previous30DaysRevenue: previous,
+            growthPercentage: Number(percentage.toFixed(2)),
+            trend,
+        };
+
+        const reveniewTrendAndTopTenCampain = this.reveniewTrendAndTopTenCampain();
+
+        return {
+            totalReveniew,
+            groth,
+            reveniewTrendAndTopTenCampain
+        };
+    };
 
 }
