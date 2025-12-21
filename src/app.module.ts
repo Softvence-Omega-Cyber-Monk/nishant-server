@@ -18,6 +18,7 @@ import { AadharModule } from './aadhar/aadhar.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationGateway } from './notification/notification.gateway';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { NotificationGateway } from './notification/notification.gateway';
     CloudinaryModule,
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
-    EngagementModule
+    EngagementModule,
+    AdminModule
   ],
   controllers: [AppController],
   providers: [AppService],

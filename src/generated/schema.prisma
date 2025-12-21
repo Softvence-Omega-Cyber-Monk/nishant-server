@@ -11,24 +11,31 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserActiveStatus {
+  ACTIVE
+  BANNED
+  FLAGGED
+}
+
 model User {
-  userId          String    @id @default(uuid())
-  role            Role      @default(USER)
+  userId          String           @id @default(uuid())
+  role            Role             @default(USER)
   fullName        String
-  phone           String    @unique
-  email           String    @unique
+  phone           String           @unique
+  email           String           @unique
   password        String
-  aadharNumber    String    @unique
+  aadharNumber    String           @unique
   refreshToken    String?
-  aadhaarVerified Boolean   @default(false)
+  aadhaarVerified Boolean          @default(false)
   maskedAadhaar   String?
   aadhaarData     Json?
-  photo           String?   @db.Text
+  photo           String?          @db.Text
   address         Json?
   dateOfBirth     DateTime?
   gender          String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  activeStatus    UserActiveStatus @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   // Vendor specific fields
   followerCount Int?    @default(0)

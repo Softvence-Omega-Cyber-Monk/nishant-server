@@ -83,7 +83,16 @@ export type NotificationSettings = $Result.DefaultSelection<Prisma.$Notification
  * Enums
  */
 export namespace $Enums {
-  export const Role: {
+  export const UserActiveStatus: {
+  ACTIVE: 'ACTIVE',
+  BANNED: 'BANNED',
+  FLAGGED: 'FLAGGED'
+};
+
+export type UserActiveStatus = (typeof UserActiveStatus)[keyof typeof UserActiveStatus]
+
+
+export const Role: {
   ADMIN: 'ADMIN',
   USER: 'USER',
   VENDOR: 'VENDOR'
@@ -130,6 +139,10 @@ export const TransactionStatus: {
 export type TransactionStatus = (typeof TransactionStatus)[keyof typeof TransactionStatus]
 
 }
+
+export type UserActiveStatus = $Enums.UserActiveStatus
+
+export const UserActiveStatus: typeof $Enums.UserActiveStatus
 
 export type Role = $Enums.Role
 
@@ -2314,6 +2327,7 @@ export namespace Prisma {
     photo: string | null
     dateOfBirth: Date | null
     gender: string | null
+    activeStatus: $Enums.UserActiveStatus | null
     createdAt: Date | null
     updatedAt: Date | null
     followerCount: number | null
@@ -2339,6 +2353,7 @@ export namespace Prisma {
     photo: string | null
     dateOfBirth: Date | null
     gender: string | null
+    activeStatus: $Enums.UserActiveStatus | null
     createdAt: Date | null
     updatedAt: Date | null
     followerCount: number | null
@@ -2366,6 +2381,7 @@ export namespace Prisma {
     address: number
     dateOfBirth: number
     gender: number
+    activeStatus: number
     createdAt: number
     updatedAt: number
     followerCount: number
@@ -2401,6 +2417,7 @@ export namespace Prisma {
     photo?: true
     dateOfBirth?: true
     gender?: true
+    activeStatus?: true
     createdAt?: true
     updatedAt?: true
     followerCount?: true
@@ -2426,6 +2443,7 @@ export namespace Prisma {
     photo?: true
     dateOfBirth?: true
     gender?: true
+    activeStatus?: true
     createdAt?: true
     updatedAt?: true
     followerCount?: true
@@ -2453,6 +2471,7 @@ export namespace Prisma {
     address?: true
     dateOfBirth?: true
     gender?: true
+    activeStatus?: true
     createdAt?: true
     updatedAt?: true
     followerCount?: true
@@ -2567,6 +2586,7 @@ export namespace Prisma {
     address: JsonValue | null
     dateOfBirth: Date | null
     gender: string | null
+    activeStatus: $Enums.UserActiveStatus
     createdAt: Date
     updatedAt: Date
     followerCount: number | null
@@ -2613,6 +2633,7 @@ export namespace Prisma {
     address?: boolean
     dateOfBirth?: boolean
     gender?: boolean
+    activeStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     followerCount?: boolean
@@ -2652,6 +2673,7 @@ export namespace Prisma {
     address?: boolean
     dateOfBirth?: boolean
     gender?: boolean
+    activeStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     followerCount?: boolean
@@ -2679,6 +2701,7 @@ export namespace Prisma {
     address?: boolean
     dateOfBirth?: boolean
     gender?: boolean
+    activeStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     followerCount?: boolean
@@ -2706,6 +2729,7 @@ export namespace Prisma {
     address?: boolean
     dateOfBirth?: boolean
     gender?: boolean
+    activeStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     followerCount?: boolean
@@ -2717,7 +2741,7 @@ export namespace Prisma {
     websiteUrl?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"userId" | "role" | "fullName" | "phone" | "email" | "password" | "aadharNumber" | "refreshToken" | "aadhaarVerified" | "maskedAadhaar" | "aadhaarData" | "photo" | "address" | "dateOfBirth" | "gender" | "createdAt" | "updatedAt" | "followerCount" | "description" | "category" | "location" | "instagramUrl" | "facebookUrl" | "websiteUrl", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"userId" | "role" | "fullName" | "phone" | "email" | "password" | "aadharNumber" | "refreshToken" | "aadhaarVerified" | "maskedAadhaar" | "aadhaarData" | "photo" | "address" | "dateOfBirth" | "gender" | "activeStatus" | "createdAt" | "updatedAt" | "followerCount" | "description" | "category" | "location" | "instagramUrl" | "facebookUrl" | "websiteUrl", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     campaigns?: boolean | User$campaignsArgs<ExtArgs>
     likes?: boolean | User$likesArgs<ExtArgs>
@@ -2766,6 +2790,7 @@ export namespace Prisma {
       address: Prisma.JsonValue | null
       dateOfBirth: Date | null
       gender: string | null
+      activeStatus: $Enums.UserActiveStatus
       createdAt: Date
       updatedAt: Date
       followerCount: number | null
@@ -3224,6 +3249,7 @@ export namespace Prisma {
     readonly address: FieldRef<"User", 'Json'>
     readonly dateOfBirth: FieldRef<"User", 'DateTime'>
     readonly gender: FieldRef<"User", 'String'>
+    readonly activeStatus: FieldRef<"User", 'UserActiveStatus'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
     readonly followerCount: FieldRef<"User", 'Int'>
@@ -17695,6 +17721,7 @@ export namespace Prisma {
     address: 'address',
     dateOfBirth: 'dateOfBirth',
     gender: 'gender',
+    activeStatus: 'activeStatus',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     followerCount: 'followerCount',
@@ -17997,6 +18024,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'UserActiveStatus'
+   */
+  export type EnumUserActiveStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserActiveStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'UserActiveStatus[]'
+   */
+  export type ListEnumUserActiveStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserActiveStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Int'
    */
   export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -18102,6 +18143,7 @@ export namespace Prisma {
     address?: JsonNullableFilter<"User">
     dateOfBirth?: DateTimeNullableFilter<"User"> | Date | string | null
     gender?: StringNullableFilter<"User"> | string | null
+    activeStatus?: EnumUserActiveStatusFilter<"User"> | $Enums.UserActiveStatus
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     followerCount?: IntNullableFilter<"User"> | number | null
@@ -18140,6 +18182,7 @@ export namespace Prisma {
     address?: SortOrderInput | SortOrder
     dateOfBirth?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
+    activeStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     followerCount?: SortOrderInput | SortOrder
@@ -18181,6 +18224,7 @@ export namespace Prisma {
     address?: JsonNullableFilter<"User">
     dateOfBirth?: DateTimeNullableFilter<"User"> | Date | string | null
     gender?: StringNullableFilter<"User"> | string | null
+    activeStatus?: EnumUserActiveStatusFilter<"User"> | $Enums.UserActiveStatus
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     followerCount?: IntNullableFilter<"User"> | number | null
@@ -18219,6 +18263,7 @@ export namespace Prisma {
     address?: SortOrderInput | SortOrder
     dateOfBirth?: SortOrderInput | SortOrder
     gender?: SortOrderInput | SortOrder
+    activeStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     followerCount?: SortOrderInput | SortOrder
@@ -18254,6 +18299,7 @@ export namespace Prisma {
     address?: JsonNullableWithAggregatesFilter<"User">
     dateOfBirth?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     gender?: StringNullableWithAggregatesFilter<"User"> | string | null
+    activeStatus?: EnumUserActiveStatusWithAggregatesFilter<"User"> | $Enums.UserActiveStatus
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     followerCount?: IntNullableWithAggregatesFilter<"User"> | number | null
@@ -19209,6 +19255,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -19247,6 +19294,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -19285,6 +19333,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -19323,6 +19372,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -19361,6 +19411,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -19388,6 +19439,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -19415,6 +19467,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -20469,6 +20522,13 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type EnumUserActiveStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserActiveStatus | EnumUserActiveStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumUserActiveStatusFilter<$PrismaModel> | $Enums.UserActiveStatus
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -20617,6 +20677,7 @@ export namespace Prisma {
     address?: SortOrder
     dateOfBirth?: SortOrder
     gender?: SortOrder
+    activeStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     followerCount?: SortOrder
@@ -20646,6 +20707,7 @@ export namespace Prisma {
     photo?: SortOrder
     dateOfBirth?: SortOrder
     gender?: SortOrder
+    activeStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     followerCount?: SortOrder
@@ -20671,6 +20733,7 @@ export namespace Prisma {
     photo?: SortOrder
     dateOfBirth?: SortOrder
     gender?: SortOrder
+    activeStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     followerCount?: SortOrder
@@ -20778,6 +20841,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type EnumUserActiveStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserActiveStatus | EnumUserActiveStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumUserActiveStatusWithAggregatesFilter<$PrismaModel> | $Enums.UserActiveStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumUserActiveStatusFilter<$PrismaModel>
+    _max?: NestedEnumUserActiveStatusFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -21673,6 +21746,10 @@ export namespace Prisma {
 
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
+  }
+
+  export type EnumUserActiveStatusFieldUpdateOperationsInput = {
+    set?: $Enums.UserActiveStatus
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -22852,6 +22929,13 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type NestedEnumUserActiveStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserActiveStatus | EnumUserActiveStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumUserActiveStatusFilter<$PrismaModel> | $Enums.UserActiveStatus
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -22972,6 +23056,16 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumUserActiveStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserActiveStatus | EnumUserActiveStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.UserActiveStatus[] | ListEnumUserActiveStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumUserActiveStatusWithAggregatesFilter<$PrismaModel> | $Enums.UserActiveStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumUserActiveStatusFilter<$PrismaModel>
+    _max?: NestedEnumUserActiveStatusFilter<$PrismaModel>
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -23871,6 +23965,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -23908,6 +24003,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -24223,6 +24319,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -24260,6 +24357,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -24561,6 +24659,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -24598,6 +24697,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -24748,6 +24848,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -24785,6 +24886,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -24913,6 +25015,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -24950,6 +25053,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -25100,6 +25204,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25137,6 +25242,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25265,6 +25371,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -25302,6 +25409,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -25452,6 +25560,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25489,6 +25598,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25617,6 +25727,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -25654,6 +25765,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -25859,6 +25971,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25896,6 +26009,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -26071,6 +26185,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -26108,6 +26223,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -26258,6 +26374,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -26295,6 +26412,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -26423,6 +26541,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -26460,6 +26579,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -26610,6 +26730,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -26647,6 +26768,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -26775,6 +26897,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -26812,6 +26935,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -26962,6 +27086,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -26999,6 +27124,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -27127,6 +27253,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -27164,6 +27291,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -27314,6 +27442,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -27351,6 +27480,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -27576,6 +27706,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -27613,6 +27744,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -27757,6 +27889,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -27794,6 +27927,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -27928,6 +28062,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -27965,6 +28100,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: Date | string | null
     gender?: string | null
+    activeStatus?: $Enums.UserActiveStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     followerCount?: number | null
@@ -28018,6 +28154,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
@@ -28055,6 +28192,7 @@ export namespace Prisma {
     address?: NullableJsonNullValueInput | InputJsonValue
     dateOfBirth?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     gender?: NullableStringFieldUpdateOperationsInput | string | null
+    activeStatus?: EnumUserActiveStatusFieldUpdateOperationsInput | $Enums.UserActiveStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     followerCount?: NullableIntFieldUpdateOperationsInput | number | null
