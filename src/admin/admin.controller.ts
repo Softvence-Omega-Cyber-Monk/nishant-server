@@ -142,6 +142,9 @@ export class AdminController {
   };
 
 
+
+  
+
   @Get("admin/campaignAnalytics/:campaignId")
   async getCampaignAnalytics(
     @Param("campaignId") campaignId: string
