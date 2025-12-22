@@ -1060,53 +1060,53 @@ export class AdminService {
         return Object.values(daysMap);
     }
 
-    // async getLast7DaysDayWiseChart(campaignId: string) {
-    //     const endDate = new Date();
-    //     endDate.setHours(23, 59, 59, 999);
+    async getLast7DaysDayWiseChart(campaignId: string) {
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
 
-    //     const startDate = new Date();
-    //     startDate.setDate(startDate.getDate() - 6);
-    //     startDate.setHours(0, 0, 0, 0);
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
 
-    //     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    //     // Prepare last 7 days in correct order
-    //     const daysMap: Record<string, any> = {};
-    //     for (let i = 0; i < 7; i++) {
-    //         const d = new Date(startDate);
-    //         d.setDate(d.getDate() + i);
-    //         const day = dayNames[d.getDay()];
+        // Prepare last 7 days in correct order
+        const daysMap: Record<string, any> = {};
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const day = dayNames[d.getDay()];
 
-    //         daysMap[day] = {
-    //             day,
-    //             impression: 0,
-    //             click: 0
-    //         };
-    //     }
+            daysMap[day] = {
+                day,
+                impression: 0,
+                click: 0
+            };
+        }
 
-    //     const [impressions, clicks] = await Promise.all([
-    //         this.Prisma.impression.findMany({
-    //             where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
-    //             select: { createdAt: true }
-    //         }),
-    //         this.Prisma.click.findMany({
-    //             where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
-    //             select: { createdAt: true }
-    //         })
-    //     ]);
+        const [impressions, clicks] = await Promise.all([
+            this.Prisma.impression.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.click.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            })
+        ]);
 
-    //     impressions.forEach(i => {
-    //         const day = dayNames[i.createdAt.getDay()];
-    //         if (daysMap[day]) daysMap[day].impression++;
-    //     });
+        impressions.forEach(i => {
+            const day = dayNames[i.createdAt.getDay()];
+            if (daysMap[day]) daysMap[day].impression++;
+        });
 
-    //     clicks.forEach(c => {
-    //         const day = dayNames[c.createdAt.getDay()];
-    //         if (daysMap[day]) daysMap[day].click++;
-    //     });
+        clicks.forEach(c => {
+            const day = dayNames[c.createdAt.getDay()];
+            if (daysMap[day]) daysMap[day].click++;
+        });
 
-    //     return Object.values(daysMap);
-    // }
+        return Object.values(daysMap);
+    }
 
     async getCampainAnalyticalData(campaignId: string) {
 
