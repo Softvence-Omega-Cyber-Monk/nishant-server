@@ -47,6 +47,7 @@ model User {
   facebookUrl   String?
   websiteUrl    String?
   pointsBalance Int @default(0)
+  profileCompleted Boolean @default(false)
 
   // Relations
   campaigns            Campaign[]
