@@ -12,102 +12,227 @@ import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { PaymentVerificationDto } from './dto/payment-verification.dto';
-import * as crypto from 'crypto';
+import NodeGeocoder from 'node-geocoder';
 
 @Injectable()
 export class CampaignService {
+  private readonly geocoder: NodeGeocoder.Geocoder;
   constructor(
     private prisma: PrismaService,
     private cloudinary: CloudinaryService,
     private razorpay: RazorpayService,
     private notification: NotificationService,
-  ) {}
-
-  async createCampaign(
-    vendorId: string,
-    dto: CreateCampaignDto,
-    files: Express.Multer.File[],
   ) {
-    // Verify vendor role
-    const vendor = await this.prisma.user.findUnique({
-      where: { userId: vendorId },
+this.geocoder = NodeGeocoder({
+      provider: 'openstreetmap', 
     });
 
-    if (!vendor || vendor.role !== 'VENDOR') {
-      throw new ForbiddenException('Only vendors can create campaigns');
+  }
+
+
+async createCampaign(
+  vendorId: string,
+  dto: CreateCampaignDto,
+  files: Express.Multer.File[],
+) {
+  // Verify vendor role
+  const vendor = await this.prisma.user.findUnique({
+    where: { userId: vendorId },
+  });
+
+  if (!vendor || vendor.role !== 'VENDOR') {
+    throw new ForbiddenException('Only vendors can create campaigns');
+  }
+
+  // Upload media to Cloudinary
+  const mediaUrls = await Promise.all(
+    files.map(async (file) => {
+      const result = await this.cloudinary.uploadFile(file);
+      return {
+        type: file.mimetype.startsWith('image/') ? 'image' : 'video',
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
+    }),
+  );
+
+  // ==================== GEOCODING: Extract address and geocode ====================
+  let targetLatitude: number | undefined = undefined;
+  let targetLongitude: number | undefined = undefined;
+  const radiusKm = dto.targetedLocation.radius ?? 50;
+
+  // Use manual override if provided (dto fields are optional → number | undefined)
+  if (dto.targetLatitude !== undefined && dto.targetLongitude !== undefined) {
+    targetLatitude = dto.targetLatitude;
+    targetLongitude = dto.targetLongitude;
+  } else {
+    // Build address string from targetedLocation (preserve old behavior)
+    const parts = [
+      dto.targetedLocation.address,
+      dto.targetedLocation.city,
+      dto.targetedLocation.state,
+      dto.targetedLocation.country,
+    ].filter(Boolean);
+
+    const addressString = parts.join(', ') || 'India'; // fallback to India
+
+    const res = await this.geocoder.geocode(addressString);
+
+    if (res.length === 0) {
+      throw new BadRequestException('Unable to geocode the targeted location.');
     }
 
-    // Upload media to Cloudinary
-    const mediaUrls = await Promise.all(
-      files.map(async (file) => {
-        const result = await this.cloudinary.uploadFile(file);
-        return {
-          type: file.mimetype.startsWith('image/') ? 'image' : 'video',
-          url: result.secure_url,
-          publicId: result.public_id,
-        };
-      }),
-    );
-
-    // ==================== DEMO MODE: Using mock Razorpay order ====================
-    // Generate demo order ID
-    const demoOrderId = `order_demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const amount = dto.budget * 100; // Convert to paise
-
-    // Mock order object (comment out real API call)
-    const order = {
-      id: demoOrderId,
-      amount: amount,
-      currency: 'INR',
-      receipt: `campaign_${Date.now()}`,
-      status: 'created',
-    };
-
-    console.log('🎭 DEMO MODE: Created mock Razorpay order:', order);
-
-    // ==================== REAL MODE (COMMENTED OUT) ====================
-    // Uncomment this when you want to use real Razorpay
-    /*
-    const amount = dto.budget * 100; // Convert to paise
-    const order = await this.razorpay.createOrder({
-      amount,
-      currency: 'INR',
-      receipt: `campaign_${Date.now()}`,
-    });
-    */
-    // ==================== END REAL MODE ====================
-
-    // Create campaign with PENDING payment status
-    const campaign = await this.prisma.campaign.create({
-      data: {
-        vendorId,
-        title: dto.title,
-        description: dto.description,
-        mediaUrls: mediaUrls as any,
-        targetedLocation: dto.targetedLocation as any,
-        targetedAgeMin: dto.targetedAgeMin,
-        targetedAgeMax: dto.targetedAgeMax,
-        budget: dto.budget,
-        remainingSpending: dto.budget,
-        startDate: new Date(dto.startDate),
-        endDate: new Date(dto.endDate),
-        razorpayOrderId: order.id,
-        status: 'PAUSED',
-      },
-    });
-
-    return {
-      campaign,
-      order: {
-        id: order.id,
-        amount: order.amount,
-        currency: order.currency,
-      },
-      demoMode: true, // Flag to indicate demo mode
-      message:
-        '⚠️ DEMO MODE: Use the verify-payment endpoint with this order ID to activate campaign',
-    };
+    targetLatitude = res[0].latitude;
+    targetLongitude = res[0].longitude;
   }
+
+  // ==================== DEMO MODE: Mock Razorpay ====================
+  const demoOrderId = `order_demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const amount = dto.budget * 100;
+
+  const order = {
+    id: demoOrderId,
+    amount: amount,
+    currency: 'INR',
+    receipt: `campaign_${Date.now()}`,
+    status: 'created',
+  };
+
+  console.log('🎭 DEMO MODE: Created mock Razorpay order:', order);
+
+  // ==================== Create Campaign ====================
+  const campaign = await this.prisma.campaign.create({
+    data: {
+      vendorId,
+      title: dto.title,
+      description: dto.description,
+      mediaUrls: mediaUrls as any,
+
+      // Keep original targetedLocation JSON exactly as sent by frontend
+      targetedLocation: dto.targetedLocation as any,
+
+      // New accurate geo fields for location-based feed
+      targetLatitude: targetLatitude ?? null,     // Converts undefined → null for DB
+      targetLongitude: targetLongitude ?? null,   // Prisma optional Float accepts null
+      targetRadiusKm: radiusKm,
+
+      targetedAgeMin: dto.targetedAgeMin,
+      targetedAgeMax: dto.targetedAgeMax,
+
+      budget: dto.budget,
+      remainingSpending: dto.budget,
+      currentSpending: 0,
+
+      startDate: new Date(dto.startDate),
+      endDate: new Date(dto.endDate),
+
+      razorpayOrderId: order.id,
+      status: 'PAUSED',
+      paymentStatus: 'PENDING',
+    },
+  });
+
+  return {
+    campaign,
+    order: {
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+    },
+    demoMode: true,
+    message: '⚠️ DEMO MODE: Use verify-payment endpoint to activate campaign',
+  };
+}
+
+
+
+
+// async createCampaign(
+//     vendorId: string,
+//     dto: CreateCampaignDto,
+//     files: Express.Multer.File[],
+//   ) {
+//     // Verify vendor role
+//     const vendor = await this.prisma.user.findUnique({
+//       where: { userId: vendorId },
+//     });
+
+//     if (!vendor || vendor.role !== 'VENDOR') {
+//       throw new ForbiddenException('Only vendors can create campaigns');
+//     }
+
+//     // Upload media to Cloudinary
+//     const mediaUrls = await Promise.all(
+//       files.map(async (file) => {
+//         const result = await this.cloudinary.uploadFile(file);
+//         return {
+//           type: file.mimetype.startsWith('image/') ? 'image' : 'video',
+//           url: result.secure_url,
+//           publicId: result.public_id,
+//         };
+//       }),
+//     );
+
+//     // ==================== DEMO MODE: Using mock Razorpay order ====================
+//     // Generate demo order ID
+//     const demoOrderId = `order_demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+//     const amount = dto.budget * 100; // Convert to paise
+
+//     // Mock order object (comment out real API call)
+//     const order = {
+//       id: demoOrderId,
+//       amount: amount,
+//       currency: 'INR',
+//       receipt: `campaign_${Date.now()}`,
+//       status: 'created',
+//     };
+
+//     console.log('🎭 DEMO MODE: Created mock Razorpay order:', order);
+
+//     // ==================== REAL MODE (COMMENTED OUT) ====================
+//     // Uncomment this when you want to use real Razorpay
+//     /*
+//     const amount = dto.budget * 100; // Convert to paise
+//     const order = await this.razorpay.createOrder({
+//       amount,
+//       currency: 'INR',
+//       receipt: `campaign_${Date.now()}`,
+//     });
+//     */
+//     // ==================== END REAL MODE ====================
+
+//     // Create campaign with PENDING payment status
+//     const campaign = await this.prisma.campaign.create({
+//       data: {
+//         vendorId,
+//         title: dto.title,
+//         description: dto.description,
+//         mediaUrls: mediaUrls as any,
+//         targetedLocation: dto.targetedLocation as any,
+//         targetedAgeMin: dto.targetedAgeMin,
+//         targetedAgeMax: dto.targetedAgeMax,
+//         budget: dto.budget,
+//         remainingSpending: dto.budget,
+//         startDate: new Date(dto.startDate),
+//         endDate: new Date(dto.endDate),
+//         razorpayOrderId: order.id,
+//         status: 'PAUSED',
+//       },
+//     });
+
+//     return {
+//       campaign,
+//       order: {
+//         id: order.id,
+//         amount: order.amount,
+//         currency: order.currency,
+//       },
+//       demoMode: true, // Flag to indicate demo mode
+//       message:
+//         '⚠️ DEMO MODE: Use the verify-payment endpoint with this order ID to activate campaign',
+//     };
+//   }
+
 
   async verifyPaymentAndActivateCampaign(dto: PaymentVerificationDto) {
     // ==================== DEMO MODE: Skip signature verification ====================
@@ -325,62 +450,193 @@ export class CampaignService {
     return stats;
   }
 
-  async updateCampaign(
-    campaignId: string,
-    vendorId: string,
-    dto: UpdateCampaignDto,
-    files?: Express.Multer.File[],
-  ) {
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { campaignId },
-    });
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
-    }
 
-    if (campaign.vendorId !== vendorId) {
-      throw new ForbiddenException('You do not have access to this campaign');
-    }
+async updateCampaign(
+  campaignId: string,
+  vendorId: string,
+  dto: UpdateCampaignDto,
+  files?: Express.Multer.File[],
+) {
+  const campaign = await this.prisma.campaign.findUnique({
+    where: { campaignId },
+  });
 
-    const updateData: any = { ...dto };
-
-    // Upload new media if provided
-    if (files && files.length > 0) {
-      // Delete old media from Cloudinary
-      const oldMedia = campaign.mediaUrls as any[];
-      await Promise.all(
-        oldMedia.map((media) => this.cloudinary.deleteFile(media.publicId)),
-      );
-
-      // Upload new media
-      const mediaUrls = await Promise.all(
-        files.map(async (file) => {
-          const result = await this.cloudinary.uploadFile(file);
-          return {
-            type: file.mimetype.startsWith('image/') ? 'image' : 'video',
-            url: result.secure_url,
-            publicId: result.public_id,
-          };
-        }),
-      );
-      updateData.mediaUrls = mediaUrls;
-    }
-
-    if (dto.startDate) {
-      updateData.startDate = new Date(dto.startDate);
-    }
-    if (dto.endDate) {
-      updateData.endDate = new Date(dto.endDate);
-    }
-
-    const updatedCampaign = await this.prisma.campaign.update({
-      where: { campaignId },
-      data: updateData,
-    });
-
-    return updatedCampaign;
+  if (!campaign) {
+    throw new NotFoundException('Campaign not found');
   }
+
+  if (campaign.vendorId !== vendorId) {
+    throw new ForbiddenException('You do not have access to this campaign');
+  }
+
+  // Prepare update data
+  const updateData: any = {};
+
+  // Simple fields - copy if provided
+  if (dto.title !== undefined) updateData.title = dto.title;
+  if (dto.description !== undefined) updateData.description = dto.description;
+  if (dto.targetedAgeMin !== undefined) updateData.targetedAgeMin = dto.targetedAgeMin;
+  if (dto.targetedAgeMax !== undefined) updateData.targetedAgeMax = dto.targetedAgeMax;
+  if (dto.budget !== undefined) updateData.budget = dto.budget;
+  if (dto.status !== undefined) updateData.status = dto.status;
+
+  // Date fields
+  if (dto.startDate !== undefined) {
+    updateData.startDate = new Date(dto.startDate);
+  }
+  if (dto.endDate !== undefined) {
+    updateData.endDate = new Date(dto.endDate);
+  }
+
+  // ==================== MEDIA REPLACEMENT ====================
+  if (files && files.length > 0) {
+    // Delete old media from Cloudinary
+    const oldMedia = campaign.mediaUrls as any[];
+    if (oldMedia && oldMedia.length > 0) {
+      await Promise.all(
+        oldMedia.map((media: any) => this.cloudinary.deleteFile(media.publicId)),
+      );
+    }
+
+    // Upload new media
+    const mediaUrls = await Promise.all(
+      files.map(async (file) => {
+        const result = await this.cloudinary.uploadFile(file);
+        return {
+          type: file.mimetype.startsWith('image/') ? 'image' : 'video',
+          url: result.secure_url,
+          publicId: result.public_id,
+        };
+      }),
+    );
+
+    updateData.mediaUrls = mediaUrls;
+  }
+
+  // ==================== LOCATION UPDATE & GEOCODING ====================
+  let shouldUpdateGeo = false;
+
+  // If targetedLocation is provided (from frontend)
+  if (dto.targetedLocation !== undefined) {
+    updateData.targetedLocation = dto.targetedLocation;
+    shouldUpdateGeo = true;
+  }
+
+  // If manual coordinates are provided, use them directly
+  if (dto.targetLatitude !== undefined && dto.targetLongitude !== undefined) {
+    updateData.targetLatitude = dto.targetLatitude;
+    updateData.targetLongitude = dto.targetLongitude;
+    shouldUpdateGeo = false; // No need to geocode
+  }
+
+  // If targetedLocation changed but no manual coords → geocode it
+  if (shouldUpdateGeo) {
+    let targetLatitude: number | undefined = undefined;
+    let targetLongitude: number | undefined = undefined;
+    let radiusKm = dto.targetedLocation?.radius ?? campaign.targetRadiusKm ?? 50;
+
+    // Prefer manual override (already handled above), otherwise geocode
+    if (dto.targetLatitude !== undefined && dto.targetLongitude !== undefined) {
+      targetLatitude = dto.targetLatitude;
+      targetLongitude = dto.targetLongitude;
+    } else if (dto.targetedLocation) {
+      const parts = [
+        (dto.targetedLocation as any).address,
+        (dto.targetedLocation as any).city,
+        (dto.targetedLocation as any).state,
+        (dto.targetedLocation as any).country,
+      ].filter(Boolean);
+
+      const addressString = parts.join(', ') || 'India';
+
+      const res = await this.geocoder.geocode(addressString);
+
+      if (res.length === 0) {
+        throw new BadRequestException('Unable to geocode the updated location.');
+      }
+
+      targetLatitude = res[0].latitude;
+      targetLongitude = res[0].longitude;
+    }
+
+    updateData.targetLatitude = targetLatitude ?? null;
+    updateData.targetLongitude = targetLongitude ?? null;
+    updateData.targetRadiusKm = radiusKm;
+  }
+
+  // Optional: Update radius separately if provided directly
+  if (dto.targetRadiusKm !== undefined) {
+    updateData.targetRadiusKm = dto.targetRadiusKm;
+  }
+
+  // ==================== FINAL UPDATE ====================
+  const updatedCampaign = await this.prisma.campaign.update({
+    where: { campaignId },
+    data: updateData,
+  });
+
+  return updatedCampaign;
+}
+
+
+
+  // async updateCampaign(
+  //   campaignId: string,
+  //   vendorId: string,
+  //   dto: UpdateCampaignDto,
+  //   files?: Express.Multer.File[],
+  // ) {
+  //   const campaign = await this.prisma.campaign.findUnique({
+  //     where: { campaignId },
+  //   });
+
+  //   if (!campaign) {
+  //     throw new NotFoundException('Campaign not found');
+  //   }
+
+  //   if (campaign.vendorId !== vendorId) {
+  //     throw new ForbiddenException('You do not have access to this campaign');
+  //   }
+
+  //   const updateData: any = { ...dto };
+
+  //   // Upload new media if provided
+  //   if (files && files.length > 0) {
+  //     // Delete old media from Cloudinary
+  //     const oldMedia = campaign.mediaUrls as any[];
+  //     await Promise.all(
+  //       oldMedia.map((media) => this.cloudinary.deleteFile(media.publicId)),
+  //     );
+
+  //     // Upload new media
+  //     const mediaUrls = await Promise.all(
+  //       files.map(async (file) => {
+  //         const result = await this.cloudinary.uploadFile(file);
+  //         return {
+  //           type: file.mimetype.startsWith('image/') ? 'image' : 'video',
+  //           url: result.secure_url,
+  //           publicId: result.public_id,
+  //         };
+  //       }),
+  //     );
+  //     updateData.mediaUrls = mediaUrls;
+  //   }
+
+  //   if (dto.startDate) {
+  //     updateData.startDate = new Date(dto.startDate);
+  //   }
+  //   if (dto.endDate) {
+  //     updateData.endDate = new Date(dto.endDate);
+  //   }
+
+  //   const updatedCampaign = await this.prisma.campaign.update({
+  //     where: { campaignId },
+  //     data: updateData,
+  //   });
+
+  //   return updatedCampaign;
+  // }
 
   async pauseCampaign(campaignId: string, vendorId: string) {
     return this.updateCampaignStatus(campaignId, vendorId, 'PAUSED');
@@ -595,45 +851,287 @@ export class CampaignService {
     }
   }
 
-  async getTargetedCampaigns(
-    user: { country?: string; state?: string; city?: string; age: number },
-    skip = 0,
-    take = 20,
-  ) {
-    const locationFilters: any[] = [];
-    if (user.country) {
-      locationFilters.push({
-        targetedLocation: { path: ['country'], equals: user.country },
-      });
-    }
-    if (user.state) {
-      locationFilters.push({
-        targetedLocation: { path: ['state'], equals: user.state },
-      });
-    }
-    if (user.city) {
-      locationFilters.push({
-        targetedLocation: { path: ['city'], equals: user.city },
-      });
-    }
+  // async getTargetedCampaigns(
+  //   user: { country?: string; state?: string; city?: string; age: number },
+  //   skip = 0,
+  //   take = 20,
+  // ) {
+  //   const locationFilters: any[] = [];
+  //   if (user.country) {
+  //     locationFilters.push({
+  //       targetedLocation: { path: ['country'], equals: user.country },
+  //     });
+  //   }
+  //   if (user.state) {
+  //     locationFilters.push({
+  //       targetedLocation: { path: ['state'], equals: user.state },
+  //     });
+  //   }
+  //   if (user.city) {
+  //     locationFilters.push({
+  //       targetedLocation: { path: ['city'], equals: user.city },
+  //     });
+  //   }
 
-    // Get all matching campaigns first
-    const campaigns = await this.prisma.campaign.findMany({
-      where: {
-        status: 'RUNNING',
-        targetedAgeMin: { lte: user.age },
-        targetedAgeMax: { gte: user.age },
-        ...(locationFilters.length ? { AND: locationFilters } : {}),
-      },
-    });
+  //   // Get all matching campaigns first
+  //   const campaigns = await this.prisma.campaign.findMany({
+  //     where: {
+  //       status: 'RUNNING',
+  //       targetedAgeMin: { lte: user.age },
+  //       targetedAgeMax: { gte: user.age },
+  //       ...(locationFilters.length ? { AND: locationFilters } : {}),
+  //     },
+  //   });
 
-    // Shuffle campaigns randomly
-    for (let i = campaigns.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [campaigns[i], campaigns[j]] = [campaigns[j], campaigns[i]];
-    }
+  //   // Shuffle campaigns randomly
+  //   for (let i = campaigns.length - 1; i > 0; i--) {
+  //     const j = Math.floor(Math.random() * (i + 1));
+  //     [campaigns[i], campaigns[j]] = [campaigns[j], campaigns[i]];
+  //   }
 
-    // Return pagination
-    return campaigns.slice(skip, skip + take);
+  //   // Return pagination
+  //   return campaigns.slice(skip, skip + take);
+  // }
+
+
+
+async getUserFeed(
+  userId: string,
+  page: number = 1,
+  limit: number = 20,
+) {                  
+  const skip = (page - 1) * limit;
+
+  // Get user's current location
+  const user = await this.prisma.user.findUnique({
+    where: { userId },
+    select: { latitude: true, longitude: true, dateOfBirth: true },
+  });
+
+  if (!user?.latitude || !user?.longitude) {
+    throw new BadRequestException(
+      'Your location is required to view the feed. Please active you GPS   location.',
+    );
   }
+
+  const userLat = user.latitude;
+  const userLng = user.longitude;
+
+  // Raw query using PostgreSQL point operator (<->) for distance
+  // This is extremely fast and accurate
+  const campaigns = await this.prisma.$queryRaw<
+    Array<{
+      campaignId: string;
+      title: string;
+      description: string;
+      mediaUrls: any;
+      targetLatitude: number;
+      targetLongitude: number;
+      targetRadiusKm: number;
+      distanceKm: number;
+      likeCount: number;
+      dislikeCount: number;
+      commentCount: number;
+      shareCount: number;
+      saveCount: number;
+      vendor: {
+        fullName: string;
+        photo: string | null;
+        followerCount: number;
+      };
+    }>
+  >`
+    SELECT 
+      c."campaignId",
+      c.title,
+      c.description,
+      c."mediaUrls",
+      c."targetLatitude",
+      c."targetLongitude",
+      c."targetRadiusKm",
+      (point(c."targetLongitude", c."targetLatitude") <-> point(${userLng}, ${userLat})) * 1.60934 AS "distanceKm",
+      c."likeCount",
+      c."dislikeCount",
+      c."commentCount",
+      c."shareCount",
+      c."saveCount",
+      json_build_object(
+        'fullName', v."fullName",
+        'photo', v.photo,
+        'followerCount', v."followerCount"
+      ) AS vendor
+    FROM "campaigns" c
+    INNER JOIN "users" v ON c."vendorId" = v."userId"
+    WHERE c.status = 'RUNNING'
+      AND c."startDate" <= NOW()
+      AND c."endDate" >= NOW()
+      AND c."targetLatitude" IS NOT NULL
+      AND c."targetLongitude" IS NOT NULL
+      -- User must be within campaign's radius
+      AND (point(c."targetLongitude", c."targetLatitude") <-> point(${userLng}, ${userLat})) * 1.60934 <= c."targetRadiusKm"
+    ORDER BY "distanceKm" ASC
+    LIMIT ${limit} OFFSET ${skip}
+  `;
+
+  // Fetch engagement status for each campaign (like/dislike/save)
+  const campaignIds = campaigns.map((c) => c.campaignId);
+
+  const [likes, dislikes, saves] = await Promise.all([
+    this.prisma.like.findMany({
+      where: { campaignId: { in: campaignIds }, userId },
+      select: { campaignId: true },
+    }),
+    this.prisma.dislike.findMany({
+      where: { campaignId: { in: campaignIds }, userId },
+      select: { campaignId: true },
+    }),
+    this.prisma.save.findMany({
+      where: { campaignId: { in: campaignIds }, userId },
+      select: { campaignId: true },
+    }),
+  ]);
+
+  const likedSet = new Set(likes.map((l) => l.campaignId));
+  const dislikedSet = new Set(dislikes.map((d) => d.campaignId));
+  const savedSet = new Set(saves.map((s) => s.campaignId));
+
+  // Combine data
+  const feed = campaigns.map((campaign) => ({
+    ...campaign,
+    userEngagement: {
+      liked: likedSet.has(campaign.campaignId),
+      disliked: dislikedSet.has(campaign.campaignId),
+      saved: savedSet.has(campaign.campaignId),
+    },
+    // Round distance for clean UI
+    distanceKm: Math.round(campaign.distanceKm),
+  }));
+
+  return {
+    data: feed,
+    pagination: {
+      page,
+      limit,
+      hasMore: feed.length === limit,
+    },
+  };
+}
+
+async searchCampaigns(
+  userId: string,
+  searchTerm: string,
+  page: number = 1,
+  limit: number = 20,
+) {
+  const skip = (page - 1) * limit;
+
+  const normalizedTerm = searchTerm.trim();
+  if (!normalizedTerm) {
+    throw new BadRequestException('Search term cannot be empty');
+  }
+
+  // Fetch matching campaigns using Prisma (case-insensitive search)
+  const campaigns = await this.prisma.campaign.findMany({
+    where: {
+      status: 'RUNNING',
+      startDate: { lte: new Date() },
+      endDate: { gte: new Date() },
+      OR: [
+        { title: { contains: normalizedTerm, mode: 'insensitive' } },
+        { description: { contains: normalizedTerm, mode: 'insensitive' } },
+      ],
+    },
+    select: {
+      campaignId: true,
+      title: true,
+      description: true,
+      mediaUrls: true,
+      targetLatitude: true,
+      targetLongitude: true,
+      targetRadiusKm: true,
+      likeCount: true,
+      dislikeCount: true,
+      commentCount: true,
+      shareCount: true,
+      saveCount: true,
+      createdAt: true,
+      vendor: {
+        select: {
+          fullName: true,
+          photo: true,
+          followerCount: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' }, // Basic fallback order from DB
+    skip,
+    take: limit + 10, // Fetch a few extra for accurate in-memory sorting
+  });
+
+  // In-memory relevance sorting (exact prefix > contains > newest)
+  const termLower = normalizedTerm.toLowerCase();
+
+  const sortedCampaigns = campaigns.sort((a, b) => {
+    const aTitle = a.title.toLowerCase();
+    const bTitle = b.title.toLowerCase();
+
+    // 1. Title starts with search term
+    const aStartsWith = aTitle.startsWith(termLower) ? 0 : 1;
+    const bStartsWith = bTitle.startsWith(termLower) ? 0 : 1;
+    if (aStartsWith !== bStartsWith) return aStartsWith - bStartsWith;
+
+    // 2. Title contains search term
+    const aContains = aTitle.includes(termLower) ? 0 : 1;
+    const bContains = bTitle.includes(termLower) ? 0 : 1;
+    if (aContains !== bContains) return aContains - bContains;
+
+    // 3. Newest first
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+
+  // Apply limit after sorting
+  const limitedCampaigns = sortedCampaigns.slice(0, limit);
+
+  const campaignIds = limitedCampaigns.map((c) => c.campaignId);
+
+  // Fetch user engagements
+  const [likes, dislikes, saves] = await Promise.all([
+    this.prisma.like.findMany({
+      where: { campaignId: { in: campaignIds }, userId },
+      select: { campaignId: true },
+    }),
+    this.prisma.dislike.findMany({
+      where: { campaignId: { in: campaignIds }, userId },
+      select: { campaignId: true },
+    }),
+    this.prisma.save.findMany({
+      where: { campaignId: { in: campaignIds }, userId },
+      select: { campaignId: true },
+    }),
+  ]);
+
+  const likedSet = new Set(likes.map((l) => l.campaignId));
+  const dislikedSet = new Set(dislikes.map((d) => d.campaignId));
+  const savedSet = new Set(saves.map((s) => s.campaignId));
+
+  const feed = limitedCampaigns.map((campaign) => ({
+    ...campaign,
+    userEngagement: {
+      liked: likedSet.has(campaign.campaignId),
+      disliked: dislikedSet.has(campaign.campaignId),
+      saved: savedSet.has(campaign.campaignId),
+    },
+  }));
+
+  return {
+    data: feed,
+    pagination: {
+      page,
+      limit,
+      hasMore: sortedCampaigns.length > limit, // true if we fetched extra and had more
+    },
+    searchTerm: normalizedTerm,
+  };
+}
+
 }
