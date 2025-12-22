@@ -139,6 +139,37 @@ export class AdminController {
     } catch (error) {
       throw error;
     }
+  };
+
+
+  @Get("admin/campaignAnalytics/:campaignId")
+  async getCampaignAnalytics(
+    @Param("campaignId") campaignId: string
+  ) {
+    const result = await this.adminService.getCampainAnalyticalData(campaignId);
+
+    return {
+      success: true,
+      message: "Campaign Analytics retrived successfully",
+      data: result
+    }
+
+  };
+
+
+  @Patch("flagCampaign/:campainId")
+  async updateCampaignFlag(
+    @Param("campainId") campainId: string
+  ) {
+
+    const result = await this.adminService.updateCampaignStatus(campainId);
+
+    return {
+      success: true,
+      message: "Successfully Flaged Campaign",
+      data: result
+    }
+
   }
 
 }
