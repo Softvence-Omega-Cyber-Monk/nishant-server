@@ -57,7 +57,7 @@ export class AdminService {
             }
         });
 
-        const totalSolvedReport = await this.Prisma.report.count({
+        const totalNotSolvedReport = await this.Prisma.report.count({
             where: {
                 isSolved: false
             }
@@ -87,7 +87,7 @@ export class AdminService {
             totalActiveCampaing,
             totalCompliteCampaing,
             totalPosedCampaing,
-            totalSolvedReport,
+            totalNotSolvedReport,
             totalReport,
             totalRevenue
         };
