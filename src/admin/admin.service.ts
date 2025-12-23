@@ -144,35 +144,29 @@ export class AdminService {
 
         const totalCampaings = await this.Prisma.campaign.count();
 
-
         const campaings = await this.Prisma.campaign.findMany({
-            select: {
-                title: true,
-                campaignId: true,
-                status: true,
-                budget: true,
-                startDate: true,
-                endDate: true,
-                createdAt: true,
-                description: true,
-                mediaUrls: true,
-                vendorId: true,
-
-
-                _count: {
-                    select: {
-                        clicks: true,
-                        impressions: true
-                    }
-                }
-
-            },
-
             skip,
             take: limit,
             orderBy: {
-                createdAt: "desc"
-            }
+                createdAt: "desc",
+            },
+
+            include: {
+                vendor: {
+                    select: {
+                        userId: true,
+                        fullName: true,
+                        email: true,
+                        photo: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        clicks: true,
+                        impressions: true,
+                    },
+                },
+            },
         });
 
         const data = campaings.map((campaing) => ({
@@ -186,7 +180,7 @@ export class AdminService {
             description: campaing.description,
             mediaUrls: campaing.mediaUrls,
             vendorId: campaing.vendorId,
-
+            vendorName: campaing.vendor.fullName,
             clicks: campaing._count.clicks,
             impressions: campaing._count.impressions,
 
