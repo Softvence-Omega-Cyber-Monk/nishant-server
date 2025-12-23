@@ -341,6 +341,7 @@ enum Role {
   ADMIN
   USER
   VENDOR
+  SUPER_ADMIN
 }
 
 enum CampaignStatus {

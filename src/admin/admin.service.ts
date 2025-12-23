@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserActiveStatus } from 'src/generated';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -479,5 +479,664 @@ export class AdminService {
             reveniewTrendAndTopTenCampain
         };
     };
+
+
+    async getTodayCampaignStats(campaignId: string) {
+        // Check campaign exists
+        const campaign = await this.Prisma.campaign.findUnique({
+            where: { campaignId }
+        });
+
+        if (!campaign) {
+            throw new NotFoundException('Campaign not found');
+        }
+
+        // Today start & end
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        // Parallel queries
+        const [
+            impression,
+            click,
+            likeCount,
+            dislikeCount,
+            loveCount,
+            commentCount,
+            shareCount,
+            saveCount
+        ] = await Promise.all([
+            this.Prisma.impression.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.click.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.like.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.dislike.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.love.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.comment.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.share.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            }),
+
+            this.Prisma.save.count({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startOfToday, lte: endOfToday }
+                }
+            })
+        ]);
+
+        const totalEngagement =
+            likeCount +
+            dislikeCount +
+            loveCount +
+            commentCount +
+            shareCount +
+            saveCount;
+
+        const ctr = impression > 0 ? (click / impression) * 100 : 0;
+
+        const engagementRate =
+            impression > 0 ? (totalEngagement / impression) * 100 : 0;
+
+        return {
+            campaignId,
+            date: new Date().toISOString().split('T')[0],
+            impression,
+            click,
+            ctr: Number(ctr.toFixed(2)),
+            engagement: totalEngagement,
+            engagementRate: Number(engagementRate.toFixed(2))
+        };
+    }
+
+    async getLast7DaysCampaignStats(campaignId: string) {
+        const campaign = await this.Prisma.campaign.findUnique({
+            where: { campaignId }
+        });
+
+        if (!campaign) {
+            throw new NotFoundException('Campaign not found');
+        }
+
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
+
+        // Helper: empty 7 days structure
+        const daysMap = {};
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const key = d.toISOString().split('T')[0];
+
+            daysMap[key] = {
+                date: key,
+                impression: 0,
+                click: 0,
+                engagement: 0,
+                ctr: 0,
+                engagementRate: 0
+            };
+        }
+
+        // Fetch all data once
+        const [
+            impressions,
+            clicks,
+            likes,
+            dislikes,
+            loves,
+            comments,
+            shares,
+            saves
+        ] = await Promise.all([
+            this.Prisma.impression.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.click.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.like.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.dislike.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.love.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.comment.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.share.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.save.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: today } },
+                select: { createdAt: true }
+            })
+        ]);
+
+        // Count impressions
+        impressions.forEach(i => {
+            const key = i.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].impression++;
+        });
+
+        // Count clicks
+        clicks.forEach(c => {
+            const key = c.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].click++;
+        });
+
+        // Engagements
+        [...likes, ...dislikes, ...loves, ...comments, ...shares, ...saves].forEach(
+            e => {
+                const key = e.createdAt.toISOString().split('T')[0];
+                if (daysMap[key]) daysMap[key].engagement++;
+            }
+        );
+
+        // Calculate rates
+        let totalImpression = 0;
+        let totalClick = 0;
+        let totalEngagement = 0;
+
+        Object.values(daysMap).forEach((day: any) => {
+            day.ctr =
+                day.impression > 0 ? Number(((day.click / day.impression) * 100).toFixed(2)) : 0;
+
+            day.engagementRate =
+                day.impression > 0
+                    ? Number(((day.engagement / day.impression) * 100).toFixed(2))
+                    : 0;
+
+            totalImpression += day.impression;
+            totalClick += day.click;
+            totalEngagement += day.engagement;
+        });
+
+        return {
+            campaignId,
+            range: 'Last 7 Days',
+            summary: {
+                impression: totalImpression,
+                click: totalClick,
+                ctr:
+                    totalImpression > 0
+                        ? Number(((totalClick / totalImpression) * 100).toFixed(2))
+                        : 0,
+                engagement: totalEngagement,
+                engagementRate:
+                    totalImpression > 0
+                        ? Number(((totalEngagement / totalImpression) * 100).toFixed(2))
+                        : 0
+            },
+            dailyStats: Object.values(daysMap)
+        };
+    }
+
+    async getLast30DaysCampaignStats(campaignId: string) {
+        const campaign = await this.Prisma.campaign.findUnique({
+            where: { campaignId }
+        });
+
+        if (!campaign) {
+            throw new NotFoundException('Campaign not found');
+        }
+
+        // Date range
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 29);
+        startDate.setHours(0, 0, 0, 0);
+
+        // Prepare 30 days structure
+        const daysMap: Record<string, any> = {};
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const key = d.toISOString().split('T')[0];
+
+            daysMap[key] = {
+                date: key,
+                impression: 0,
+                click: 0,
+                engagement: 0,
+                ctr: 0,
+                engagementRate: 0
+            };
+        }
+
+        // Fetch all events once
+        const [
+            impressions,
+            clicks,
+            likes,
+            dislikes,
+            loves,
+            comments,
+            shares,
+            saves
+        ] = await Promise.all([
+            this.Prisma.impression.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.click.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.like.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.dislike.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.love.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.comment.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.share.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.save.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            })
+        ]);
+
+        // Count impressions
+        impressions.forEach(i => {
+            const key = i.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].impression++;
+        });
+
+        // Count clicks
+        clicks.forEach(c => {
+            const key = c.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].click++;
+        });
+
+        // Engagement count
+        [...likes, ...dislikes, ...loves, ...comments, ...shares, ...saves].forEach(
+            e => {
+                const key = e.createdAt.toISOString().split('T')[0];
+                if (daysMap[key]) daysMap[key].engagement++;
+            }
+        );
+
+        // Calculate daily + total
+        let totalImpression = 0;
+        let totalClick = 0;
+        let totalEngagement = 0;
+
+        Object.values(daysMap).forEach((day: any) => {
+            day.ctr =
+                day.impression > 0
+                    ? Number(((day.click / day.impression) * 100).toFixed(2))
+                    : 0;
+
+            day.engagementRate =
+                day.impression > 0
+                    ? Number(((day.engagement / day.impression) * 100).toFixed(2))
+                    : 0;
+
+            totalImpression += day.impression;
+            totalClick += day.click;
+            totalEngagement += day.engagement;
+        });
+
+        return {
+            campaignId,
+            range: 'Last 30 Days',
+            summary: {
+                impression: totalImpression,
+                click: totalClick,
+                ctr:
+                    totalImpression > 0
+                        ? Number(((totalClick / totalImpression) * 100).toFixed(2))
+                        : 0,
+                engagement: totalEngagement,
+                engagementRate:
+                    totalImpression > 0
+                        ? Number(((totalEngagement / totalImpression) * 100).toFixed(2))
+                        : 0
+            },
+            dailyStats: Object.values(daysMap)
+        };
+    }
+
+    async getLast90DaysCampaignStats(campaignId: string) {
+        const campaign = await this.Prisma.campaign.findUnique({
+            where: { campaignId }
+        });
+
+        if (!campaign) {
+            throw new NotFoundException('Campaign not found');
+        }
+
+        // Date range
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 89);
+        startDate.setHours(0, 0, 0, 0);
+
+        // Prepare 90 days structure
+        const daysMap: Record<string, any> = {};
+        for (let i = 0; i < 90; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const key = d.toISOString().split('T')[0];
+
+            daysMap[key] = {
+                date: key,
+                impression: 0,
+                click: 0,
+                engagement: 0,
+                ctr: 0,
+                engagementRate: 0
+            };
+        }
+
+        // Fetch all events once
+        const [
+            impressions,
+            clicks,
+            likes,
+            dislikes,
+            loves,
+            comments,
+            shares,
+            saves
+        ] = await Promise.all([
+            this.Prisma.impression.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.click.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.like.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.dislike.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.love.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.comment.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.share.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.save.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            })
+        ]);
+
+        // Count impressions
+        impressions.forEach(i => {
+            const key = i.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].impression++;
+        });
+
+        // Count clicks
+        clicks.forEach(c => {
+            const key = c.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].click++;
+        });
+
+        // Engagement count
+        [...likes, ...dislikes, ...loves, ...comments, ...shares, ...saves].forEach(
+            e => {
+                const key = e.createdAt.toISOString().split('T')[0];
+                if (daysMap[key]) daysMap[key].engagement++;
+            }
+        );
+
+        // Calculate daily + total
+        let totalImpression = 0;
+        let totalClick = 0;
+        let totalEngagement = 0;
+
+        Object.values(daysMap).forEach((day: any) => {
+            day.ctr =
+                day.impression > 0
+                    ? Number(((day.click / day.impression) * 100).toFixed(2))
+                    : 0;
+
+            day.engagementRate =
+                day.impression > 0
+                    ? Number(((day.engagement / day.impression) * 100).toFixed(2))
+                    : 0;
+
+            totalImpression += day.impression;
+            totalClick += day.click;
+            totalEngagement += day.engagement;
+        });
+
+        return {
+            campaignId,
+            range: 'Last 90 Days',
+            summary: {
+                impression: totalImpression,
+                click: totalClick,
+                ctr:
+                    totalImpression > 0
+                        ? Number(((totalClick / totalImpression) * 100).toFixed(2))
+                        : 0,
+                engagement: totalEngagement,
+                engagementRate:
+                    totalImpression > 0
+                        ? Number(((totalEngagement / totalImpression) * 100).toFixed(2))
+                        : 0
+            },
+            dailyStats: Object.values(daysMap)
+        };
+    };
+
+
+    async getLast7DaysClickImpressionChart(campaignId: string) {
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
+
+        // Prepare 7 days map
+        const daysMap: Record<string, any> = {};
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const key = d.toISOString().split('T')[0];
+
+            daysMap[key] = {
+                date: key,
+                impression: 0,
+                click: 0
+            };
+        }
+
+        const [impressions, clicks] = await Promise.all([
+            this.Prisma.impression.findMany({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startDate, lte: endDate }
+                },
+                select: { createdAt: true }
+            }),
+            this.Prisma.click.findMany({
+                where: {
+                    campaignId,
+                    createdAt: { gte: startDate, lte: endDate }
+                },
+                select: { createdAt: true }
+            })
+        ]);
+
+        impressions.forEach(i => {
+            const key = i.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].impression++;
+        });
+
+        clicks.forEach(c => {
+            const key = c.createdAt.toISOString().split('T')[0];
+            if (daysMap[key]) daysMap[key].click++;
+        });
+
+        return Object.values(daysMap);
+    }
+
+    async getLast7DaysDayWiseChart(campaignId: string) {
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
+
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Prepare last 7 days in correct order
+        const daysMap: Record<string, any> = {};
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
+            const day = dayNames[d.getDay()];
+
+            daysMap[day] = {
+                day,
+                impression: 0,
+                click: 0
+            };
+        }
+
+        const [impressions, clicks] = await Promise.all([
+            this.Prisma.impression.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            }),
+            this.Prisma.click.findMany({
+                where: { campaignId, createdAt: { gte: startDate, lte: endDate } },
+                select: { createdAt: true }
+            })
+        ]);
+
+        impressions.forEach(i => {
+            const day = dayNames[i.createdAt.getDay()];
+            if (daysMap[day]) daysMap[day].impression++;
+        });
+
+        clicks.forEach(c => {
+            const day = dayNames[c.createdAt.getDay()];
+            if (daysMap[day]) daysMap[day].click++;
+        });
+
+        return Object.values(daysMap);
+    }
+
+    async getCampainAnalyticalData(campaignId: string) {
+
+        const today = this.getTodayCampaignStats(campaignId);
+        const last7Days = this.getLast7DaysCampaignStats(campaignId);
+        const last30Days = this.getLast30DaysCampaignStats(campaignId);
+        const last90Days = this.getLast90DaysCampaignStats(campaignId);
+        const last7DaysChatData = this.getLast7DaysClickImpressionChart(campaignId);
+        return {
+            today,
+            last7Days,
+            last30Days,
+            last90Days,
+            last7DaysChatData
+        }
+
+    };
+
+    async updateCampaignStatus(campaignId: string) {
+        const result = await this.Prisma.campaign.update({
+            where: {
+                campaignId: campaignId
+            },
+            data: {
+                status: "PAUSED"
+            }
+        });
+
+        return result;
+    }
+
 
 }
