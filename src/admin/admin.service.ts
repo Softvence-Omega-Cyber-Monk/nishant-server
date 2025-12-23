@@ -57,6 +57,14 @@ export class AdminService {
             }
         });
 
+        const totalSolvedReport = await this.Prisma.report.count({
+            where: {
+                isSolved: false
+            }
+        });
+
+        const totalReport = await this.Prisma.report.count()
+
         const totalRevenue = (await this.Prisma.campaign.aggregate({
             _sum: {
                 budget: true
@@ -79,6 +87,8 @@ export class AdminService {
             totalActiveCampaing,
             totalCompliteCampaing,
             totalPosedCampaing,
+            totalSolvedReport,
+            totalReport,
             totalRevenue
         };
 
