@@ -29,6 +29,8 @@ model User {
   maskedAadhaar   String?
   aadhaarData     Json?
   photo           String?          @db.Text
+  latitude   Float?
+  longitude  Float?
   address         Json?
   dateOfBirth     DateTime?
   gender          String?
@@ -44,6 +46,8 @@ model User {
   instagramUrl  String?
   facebookUrl   String?
   websiteUrl    String?
+  pointsBalance Int @default(0)
+  profileCompleted Boolean @default(false)
 
   // Relations
   campaigns            Campaign[]
@@ -58,6 +62,8 @@ model User {
   transactions         Transaction[]
   reports              Report[]
   notificationSettings NotificationSettings?
+  following   Follow[] @relation("UserFollows")    
+  followers   Follow[] @relation("VendorFollowers") 
 
   @@map("users")
 }
@@ -70,6 +76,12 @@ model Campaign {
   title       String
   description String @db.Text
   mediaUrls   Json // Array of {type: 'image'|'video', url: string, publicId: string}
+
+
+// Replace targetedLocation Json with:
+  targetLatitude   Float?
+  targetLongitude  Float?
+  targetRadiusKm   Int?     @default(50)  // default 50km
 
   targetedLocation Json // {country, state, city, radius}
   targetedAgeMin   Int?
@@ -307,6 +319,22 @@ model Report {
   description String
   isSolved    Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+
+
+model Follow {
+  id         String   @id @default(uuid())
+  followerId String   // User who follows
+  vendorId   String   // Vendor being followed
+  createdAt  DateTime @default(now())
+
+  follower   User @relation("UserFollows", fields: [followerId], references: [userId], onDelete: Cascade)
+  vendor     User @relation("VendorFollowers", fields: [vendorId], references: [userId], onDelete: Cascade)
+
+  @@unique([followerId, vendorId])
+  @@index([vendorId])
+  @@index([followerId])
 }
 
 enum Role {

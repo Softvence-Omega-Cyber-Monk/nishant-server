@@ -21,6 +21,7 @@ import { NotificationGateway } from './notification/notification.gateway';
 import { AdminModule } from './admin/admin.module';
 import { LikeModule } from './like/like.module';
 import { CommentModule } from './comment/comment.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { CommentModule } from './comment/comment.module';
     AdminModule,
     LikeModule,
     CommentModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

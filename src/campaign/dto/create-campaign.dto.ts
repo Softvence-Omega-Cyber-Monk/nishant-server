@@ -6,23 +6,18 @@ import {
   IsOptional,
   Min,
   Max,
+  IsObject,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateCampaignDto {
-  @ApiProperty({
-    example: 'Summer Sale 2024',
-    description: 'Campaign title',
-  })
+  @ApiProperty({ example: 'Summer Sale 2024', description: 'Campaign title' })
   @IsNotEmpty()
   @IsString()
   title: string;
 
-  @ApiProperty({
-    example: 'Amazing summer sale with 50% off on all products',
-    description: 'Detailed campaign description',
-  })
+  @ApiProperty({ example: 'Amazing summer sale with 50% off on all products' })
   @IsNotEmpty()
   @IsString()
   description: string;
@@ -30,74 +25,71 @@ export class CreateCampaignDto {
   @ApiProperty({
     type: 'array',
     items: { type: 'string', format: 'binary' },
-    description: 'Media files (images/videos) - at least one required',
-    required: true,
+    description: 'Media files (images/videos)',
   })
   mediaFiles?: Express.Multer.File[];
 
+  // KEEPING THE ORIGINAL FIELD - Frontend still sends this
   @ApiProperty({
     type: 'string',
-    description: 'Geographical targeting for campaign (JSON string)',
-    example:
-      '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}',
+    description: 'Geographical targeting (JSON string)',
+    example: '{"country":"India","state":"Maharashtra","city":"Mumbai","radius":50}',
     required: true,
   })
   @IsNotEmpty()
-  @IsString()
-  targetedLocation: string | object;
+  @IsString() // Accept as string from frontend (common pattern)
+  @Transform(({ value }) => (typeof value === 'string' ? JSON.parse(value) : value))
+  @IsObject()
+  targetedLocation: {
+    country?: string;
+    state?: string;
+    city?: string;
+    radius?: number;
+    address?: string; // Optional full address
+  };
 
-  @ApiPropertyOptional({
-    example: 18,
-    description: 'Minimum target age',
-    minimum: 13,
-    maximum: 100,
-  })
+  // Optional: Allow direct coordinates override (advanced)
+  @ApiPropertyOptional({ example: 19.076, description: 'Override latitude' })
   @IsOptional()
-  @Transform(({ value }) => (value ? Number(value) : undefined))
+  @Type(() => Number)
+  @IsNumber()
+  targetLatitude?: number;
+
+  @ApiPropertyOptional({ example: 72.8777, description: 'Override longitude' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  targetLongitude?: number;
+
+  @ApiPropertyOptional({ example: 18, minimum: 13, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(13)
   @Max(100)
   targetedAgeMin?: number;
 
-  @ApiPropertyOptional({
-    example: 45,
-    description: 'Maximum target age',
-    minimum: 13,
-    maximum: 100,
-  })
+  @ApiPropertyOptional({ example: 45, minimum: 13, maximum: 100 })
   @IsOptional()
-  @Transform(({ value }) => (value ? Number(value) : undefined))
+  @Type(() => Number)
   @IsNumber()
   @Min(13)
   @Max(100)
   targetedAgeMax?: number;
 
-  @ApiProperty({
-    example: 10000,
-    description: 'Campaign budget in INR',
-    minimum: 100,
-    required: true,
-  })
+  @ApiProperty({ example: 10000, minimum: 100 })
   @IsNotEmpty()
-  @Transform(({ value }) => Number(value))
+  @Type(() => Number)
   @IsNumber()
   @Min(100)
   budget: number;
 
-  @ApiProperty({
-    example: '2024-12-20T00:00:00Z',
-    description: 'Campaign start date and time',
-    required: true,
-  })
+  @ApiProperty({ example: '2025-12-25T00:00:00Z' })
   @IsNotEmpty()
   @IsDateString()
   startDate: string;
 
-  @ApiProperty({
-    example: '2024-12-31T23:59:59Z',
-    description: 'Campaign end date and time',
-    required: true,
-  })
+  @ApiProperty({ example: '2026-01-15T23:59:59Z' })
   @IsNotEmpty()
   @IsDateString()
   endDate: string;
