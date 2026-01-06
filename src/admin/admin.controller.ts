@@ -143,7 +143,7 @@ export class AdminController {
 
 
 
-  
+
 
   @Get("admin/campaignAnalytics/:campaignId")
   async getCampaignAnalytics(
@@ -171,6 +171,79 @@ export class AdminController {
       success: true,
       message: "Successfully Flaged Campaign",
       data: result
+    }
+
+  }
+
+  @Get("get-all-banned-user")
+  async getAllBannedUser(
+    @Query("page") page: string,
+    @Query("limit") limit: string
+  ) {
+
+    try {
+      const result = await this.adminService.getAllbannedUserByAdmin(Number(page) || 1, Number(limit) || 20);
+
+      return {
+        success: true,
+        messge: "All Banned user retrives successfully",
+        data: result
+      }
+    } catch (error) {
+      throw error
+    }
+
+  }
+
+
+  @Get("get-single-banned-user-with-report")
+  async getSingleUserWithReport(
+    @Query("userId") userId: string
+  ) {
+
+    const result = await this.adminService.getSingleBannedUserAlsoReport(userId);
+
+    return {
+      success: true,
+      message: "User Profile Retrived successfully with report",
+      data: result
+    }
+
+  }
+
+
+  @Get("get-single-vendor-info-and-campaign-analytics")
+  async getSingleVendorAndCampaignAnalytics(
+    @Query("userId") userId: string
+  ) {
+
+    const result = await this.adminService.getSingleVendorAndAllCampaignAnalytics(userId);
+
+    return {
+      success: true,
+      message: "Vendor Profile Retrived Successfully",
+      data: result
+    }
+  };
+
+
+  @Get("get-all-campaign-analytics")
+  async getAllCampaignAnaltics(
+    @Query("page") page: string,
+    @Query("limit") limit: string
+  ) {
+
+    try {
+      const result = await this.adminService.getAllCampaignAnalytics(Number(page) || 1, Number(limit) || 20);
+
+      return {
+        success: true,
+        message: "All Campaign Retrived successfully",
+        data: result
+      }
+
+    } catch (error) {
+      throw error
     }
 
   }

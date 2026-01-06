@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserActiveStatus } from 'src/generated';
+import { CampaignStatus, TransactionStatus, TransactionType } from 'src/generated/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -1141,6 +1142,274 @@ export class AdminService {
 
         return result;
     }
+
+    async getAllbannedUserByAdmin(page: number, limit: number) {
+
+        const count = await this.Prisma.user.count({
+            where: {
+                activeStatus: "BANNED"
+            }
+        });
+
+        const skip = (page - 1) * limit;
+
+        const totalPage = Math.ceil(count / limit);
+
+        const result = await this.Prisma.user.findMany({
+            where: {
+                activeStatus: "BANNED"
+            },
+            take: limit,
+            skip: skip
+        });
+        const data = {
+            curentPage: page,
+            limit: limit,
+            totalPage,
+            data: result
+        }
+        return data;
+    };
+
+    async getSingleBannedUserAlsoReport(userId: string) {
+        const result = await this.Prisma.user.findUnique({
+            where: {
+                userId: userId
+            },
+            include: {
+                reports: true
+            },
+
+        });
+
+        return result;
+    };
+
+
+    async getSingleVendorAndAllCampaignAnalytics(vendorId: string) {
+
+        const vendor = await this.Prisma.user.findUnique({
+            where: { userId: vendorId },
+            select: {
+                userId: true,
+                fullName: true,
+                phone: true,
+                email: true,
+                description: true,
+                category: true,
+                location: true,
+                instagramUrl: true,
+                facebookUrl: true,
+                websiteUrl: true,
+                followerCount: true,
+                profileCompleted: true,
+                createdAt: true,
+            },
+        });
+
+
+        // 1. Vendor এর সব campaign আনো
+        const campaigns = await this.Prisma.campaign.findMany({
+            where: { vendorId },
+            select: {
+                campaignId: true,
+                title: true,
+                status: true,
+                budget: true,
+                currentSpending: true,
+                impressionCount: true,
+                clickCount: true,
+                ctr: true,
+                createdAt: true,
+            },
+        });
+
+        const totalCampaign = campaigns.length;
+
+        const activeCampaign = campaigns.filter(
+            c => c.status === CampaignStatus.RUNNING,
+        ).length;
+
+        // 2. Total impressions & clicks (সব campaign মিলিয়ে)
+        const totalImpressions = campaigns.reduce(
+            (sum, c) => sum + c.impressionCount,
+            0,
+        );
+
+        const totalClicks = campaigns.reduce(
+            (sum, c) => sum + c.clickCount,
+            0,
+        );
+
+        // 3. Average CTR (overall)
+        const averageCTR =
+            totalImpressions > 0
+                ? Number(((totalClicks / totalImpressions) * 100).toFixed(2))
+                : 0;
+
+        // 4. Total revenue (campaign payment transaction)
+        const revenueAgg = await this.Prisma.transaction.aggregate({
+            where: {
+                userId: vendorId,
+                type: TransactionType.CAMPAIGN_PAYMENT,
+                status: TransactionStatus.SUCCESS,
+            },
+            _sum: {
+                amount: true,
+            },
+        });
+
+        const totalRevenue = revenueAgg._sum.amount || 0;
+
+        // 5. Per-campaign breakdown
+        const campaignBreakdown = campaigns.map(c => ({
+            campaignId: c.campaignId,
+            title: c.title,
+            status: c.status,
+            impressions: c.impressionCount,
+            clicks: c.clickCount,
+            ctr:
+                c.impressionCount > 0
+                    ? Number(((c.clickCount / c.impressionCount) * 100).toFixed(2))
+                    : 0,
+            budget: c.budget,
+            currentSpending: c.currentSpending,
+        }));
+
+        return {
+
+            vendorId,
+            vendor,
+            summary: {
+                totalCampaign,
+                activeCampaign,
+                totalRevenue,
+                averageCTR,
+                totalImpressions,
+                totalClicks,
+            },
+            campaigns: campaignBreakdown,
+        };
+    };
+
+
+    async getAllCampaignAnalytics(page = 1, limit = 10) {
+        const skip = (page - 1) * limit;
+
+        // 1. Total campaigns count
+        const totalCampaigns = await this.Prisma.campaign.count();
+
+        // 2. Fetch campaigns with vendor info (name + photo added)
+        const campaigns = await this.Prisma.campaign.findMany({
+            skip,
+            take: limit,
+            orderBy: {
+                createdAt: 'desc',
+            },
+            select: {
+                campaignId: true,
+                title: true,
+                description: true,
+                mediaUrls: true,
+
+                budget: true,
+                currentSpending: true,
+                remainingSpending: true,
+
+                startDate: true,
+                endDate: true,
+                status: true,
+                paymentStatus: true,
+
+                // Engagement counters
+                likeCount: true,
+                dislikeCount: true,
+                loveCount: true,
+                commentCount: true,
+                shareCount: true,
+                saveCount: true,
+                impressionCount: true,
+                clickCount: true,
+                conversionCount: true,
+                ctr: true,
+
+                createdAt: true,
+                updatedAt: true,
+
+                // ✅ Vendor info (UPDATED)
+                vendor: {
+                    select: {
+                        userId: true,
+                        fullName: true,   // vendor name
+                        photo: true,      // profile image
+                        category: true,
+                        location: true,
+                        followerCount: true,
+                        profileCompleted: true,
+                    },
+                },
+            },
+        });
+
+        // 3. Normalize response
+        const campaignList = campaigns.map(c => ({
+            campaignId: c.campaignId,
+
+            title: c.title,
+            description: c.description,
+            mediaUrls: c.mediaUrls,
+
+            budget: c.budget,
+            currentSpending: c.currentSpending,
+            remainingSpending: c.remainingSpending,
+
+            startDate: c.startDate,
+            endDate: c.endDate,
+            status: c.status,
+            paymentStatus: c.paymentStatus,
+
+            vendor: {
+                vendorId: c.vendor.userId,
+                name: c.vendor.fullName,
+                profileImage: c.vendor.photo, // ✅ added
+                category: c.vendor.category,
+                location: c.vendor.location,
+                followerCount: c.vendor.followerCount,
+                profileCompleted: c.vendor.profileCompleted,
+            },
+
+            engagement: {
+                likes: c.likeCount,
+                dislikes: c.dislikeCount,
+                loves: c.loveCount,
+                comments: c.commentCount,
+                shares: c.shareCount,
+                saves: c.saveCount,
+                impressions: c.impressionCount,
+                clicks: c.clickCount,
+                conversions: c.conversionCount,
+                ctr:
+                    c.impressionCount > 0
+                        ? Number(((c.clickCount / c.impressionCount) * 100).toFixed(2))
+                        : 0,
+            },
+
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+        }));
+
+        // 4. Pagination meta
+        return {
+            pagination: {
+                totalCampaign: totalCampaigns,
+                currentPage: page,
+                limit: limit,
+                totalPages: Math.ceil(totalCampaigns / limit)
+            },
+            campaigns: campaignList,
+        };
+    }
+
 
 
 }
