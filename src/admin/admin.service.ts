@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserActiveStatus } from 'src/generated';
 import { CampaignStatus, TransactionStatus, TransactionType } from 'src/generated/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 
@@ -1409,7 +1408,5 @@ export class AdminService {
             campaigns: campaignList,
         };
     }
-
-
 
 }
