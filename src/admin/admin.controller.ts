@@ -173,6 +173,28 @@ export class AdminController {
       data: result
     }
 
+  };
+
+
+
+  @Patch("/admin/banuser/:userId")
+  async banUser(
+    @Query("userId") userId: string
+  ) {
+    const result = await this.adminService.banUser(userId);
+
+    return {
+      success: true,
+      message: "User Updated Successfully",
+      data: result
+    }
+
+    try {
+
+    } catch (error) {
+      throw error
+    }
+
   }
 
   @Get("get-all-banned-user")

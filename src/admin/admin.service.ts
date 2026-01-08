@@ -1142,6 +1142,12 @@ export class AdminService {
         return result;
     }
 
+    async banUser(userId: string) {
+        const result = await this.Prisma.user.update({
+            where: {
+                userId: userId
+            },
+            data: {
     async getAllbannedUserByAdmin(page: number, limit: number) {
 
         const count = await this.Prisma.user.count({
@@ -1149,6 +1155,10 @@ export class AdminService {
                 activeStatus: "BANNED"
             }
         });
+
+        if (!result) throw new NotFoundException("User Not Found");
+
+        return result
 
         const skip = (page - 1) * limit;
 
