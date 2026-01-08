@@ -1142,5 +1142,20 @@ export class AdminService {
         return result;
     }
 
+    async banUser(userId: string) {
+        const result = await this.Prisma.user.update({
+            where: {
+                userId: userId
+            },
+            data: {
+                activeStatus: "BANNED"
+            }
+        });
+
+        if (!result) throw new NotFoundException("User Not Found");
+
+        return result
+
+    }
 
 }

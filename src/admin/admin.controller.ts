@@ -143,7 +143,7 @@ export class AdminController {
 
 
 
-  
+
 
   @Get("admin/campaignAnalytics/:campaignId")
   async getCampaignAnalytics(
@@ -171,6 +171,28 @@ export class AdminController {
       success: true,
       message: "Successfully Flaged Campaign",
       data: result
+    }
+
+  };
+
+
+
+  @Patch("/admin/banuser/:userId")
+  async banUser(
+    @Query("userId") userId: string
+  ) {
+    const result = await this.adminService.banUser(userId);
+
+    return {
+      success: true,
+      message: "User Updated Successfully",
+      data: result
+    }
+
+    try {
+
+    } catch (error) {
+      throw error
     }
 
   }
