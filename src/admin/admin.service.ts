@@ -1143,42 +1143,55 @@ export class AdminService {
     }
 
     async banUser(userId: string) {
-        const result = await this.Prisma.user.update({
-            where: {
-                userId: userId
-            },
-            data: {
+    // Find the user by their userId and update their status to 'BANNED'
+    const result = await this.Prisma.user.update({
+        where: {
+            userId: userId,  // Assuming 'userId' is the unique identifier for users in the database
+        },
+        data: {
+            activeStatus: "BANNED",  // Update the activeStatus to 'BANNED'
+        },
+    });
+
+    // Optionally, you can return the result (updated user details) or some confirmation message
+    return result;  // This will return the updated user object
+}
+
     async getAllbannedUserByAdmin(page: number, limit: number) {
-
-        const count = await this.Prisma.user.count({
-            where: {
-                activeStatus: "BANNED"
-            }
-        });
-
-        if (!result) throw new NotFoundException("User Not Found");
-
-        return result
-
-        const skip = (page - 1) * limit;
-
-        const totalPage = Math.ceil(count / limit);
-
-        const result = await this.Prisma.user.findMany({
-            where: {
-                activeStatus: "BANNED"
-            },
-            take: limit,
-            skip: skip
-        });
-        const data = {
-            curentPage: page,
-            limit: limit,
-            totalPage,
-            data: result
+    // Count the total number of banned users
+    const count = await this.Prisma.user.count({
+        where: {
+            activeStatus: "BANNED"
         }
-        return data;
+    });
+
+    // If no banned users are found, throw an exception
+    if (count === 0) throw new NotFoundException("User Not Found");
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    const totalPage = Math.ceil(count / limit);
+
+    // Fetch the actual data
+    const result = await this.Prisma.user.findMany({
+        where: {
+            activeStatus: "BANNED"
+        },
+        take: limit,
+        skip: skip
+    });
+
+    // Return paginated response
+    const data = {
+        currentPage: page,   // Corrected typo
+        limit: limit,
+        totalPage,
+        data: result
     };
+
+    return data;
+}
+
 
     async getSingleBannedUserAlsoReport(userId: string) {
         const result = await this.Prisma.user.findUnique({
