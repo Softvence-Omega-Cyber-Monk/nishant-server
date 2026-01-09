@@ -263,4 +263,25 @@ export class AdminController {
 
   }
 
+  @Get("get-all-campaign-analytics")
+  async deleteCampaign(
+    @Query("page") page: string,
+    @Query("limit") limit: string
+  ) {
+
+    try {
+      const result = await this.adminService.getAllCampaignAnalytics(Number(page) || 1, Number(limit) || 20);
+
+      return {
+        success: true,
+        message: "All Campaign Retrived successfully",
+        data: result
+      }
+
+    } catch (error) {
+      throw error
+    }
+
+  }
+
 }
