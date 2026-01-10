@@ -6,7 +6,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateVendorProfileDto } from './dto/update-vendor-profile.dto';
-import { DeleteVendorProfileDto } from './dto/delete-vendor-profile.dto';
 
 @Injectable()
 export class VendorService {
@@ -97,7 +96,7 @@ export class VendorService {
 
 
   async deleteVendorProfile(vendorId: string) {
-  console.log('deleteVendorProfile route hit');
+    
   const vendor = await this.prisma.user.findUnique({
     where: { userId: vendorId },
   });
