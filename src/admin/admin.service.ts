@@ -1343,16 +1343,20 @@ export class AdminService {
     };
 
 
-    async getAllCampaignAnalytics(page = 1, limit = 10) {
+    async getAllCampaignAnalytics(page = 1, limit = 10,filters: { status?: string } = {}) {
         const skip = (page - 1) * limit;
 
+        const where: any = {};
+        if (filters.status) where.status = filters.status;
+
         // 1. Total campaigns count
-        const totalCampaigns = await this.Prisma.campaign.count();
+        const totalCampaigns = await this.Prisma.campaign.count({ where });
 
         // 2. Fetch campaigns with vendor info (name + photo added)
         const campaigns = await this.Prisma.campaign.findMany({
             skip,
             take: limit,
+            where,
             orderBy: {
                 createdAt: 'desc',
             },
