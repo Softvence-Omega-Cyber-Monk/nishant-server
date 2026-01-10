@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CampaignStatus, TransactionStatus, TransactionType } from 'src/generated/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 
+
 @Injectable()
 export class AdminService {
     constructor(private Prisma: PrismaService) { };
@@ -148,15 +149,20 @@ export class AdminService {
 
     }
 
-    async getAllCampain(page: number, limit: number) {
+    
+    async getAllCampain(page: number, limit: number,filters: { status?: string } = {},) {
 
         const skip = (page - 1) * limit;
 
-        const totalCampaings = await this.Prisma.campaign.count();
+        const where: any = {};
+        if (filters.status) where.status = filters.status; 
+
+        const totalCampaings = await this.Prisma.campaign.count({ where });
 
         const campaings = await this.Prisma.campaign.findMany({
             skip,
             take: limit,
+            where, 
             orderBy: {
                 createdAt: "desc",
             },
@@ -168,6 +174,7 @@ export class AdminService {
                         fullName: true,
                         email: true,
                         photo: true,
+                    
                     },
                 },
                 _count: {

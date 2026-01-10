@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { AdminService } from './admin.service';
+import { ApiQuery } from '@nestjs/swagger';
 
 
 @Controller('admin')
@@ -41,13 +42,22 @@ export class AdminController {
 
 
   @Get("get-all-campaign-by-admin")
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['RUNNING', 'PAUSED', 'COMPLETED'],
+    description: 'Filter by campaign status',
+  })
+
   async getAllCampaign(
     @Query("page") page?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
+    @Query("status") status?: string,
   ) {
 
     try {
-      const result = await this.adminService.getAllCampain(Number(page) || 1, Number(limit) || 20);
+      const filterStatus = status ? { status } : {};
+      const result = await this.adminService.getAllCampain(Number(page) || 1, Number(limit) || 20, { status });
 
       return {
         success: true,
@@ -283,5 +293,7 @@ export class AdminController {
     }
 
   }
+
+
 
 }
