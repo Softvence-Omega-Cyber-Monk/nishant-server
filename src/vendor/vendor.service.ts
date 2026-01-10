@@ -6,6 +6,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateVendorProfileDto } from './dto/update-vendor-profile.dto';
+import { DeleteVendorProfileDto } from './dto/delete-vendor-profile.dto';
+
 @Injectable()
 export class VendorService {
   constructor(
@@ -92,6 +94,39 @@ export class VendorService {
 
     return updatedVendor;
   }
+
+
+  async deleteVendorProfile(vendorId: string) {
+  console.log('deleteVendorProfile route hit');
+  const vendor = await this.prisma.user.findUnique({
+    where: { userId: vendorId },
+  });
+
+  console.log(vendor?.fullName);
+
+  if (!vendor) {
+    throw new NotFoundException('Vendor not found');
+  }
+
+  if (vendor.role !== 'VENDOR') {
+    throw new ForbiddenException('Only vendors can be deleted');
+  }
+
+  // Optional: delete photo from Cloudinary
+  if (vendor.photo) {
+    const publicId = this.extractPublicId(vendor.photo);
+    await this.cloudinary.deleteFile(publicId);
+  }
+
+  await this.prisma.user.delete({
+    where: { userId: vendorId },
+  });
+
+  return {
+    message: 'Vendor deleted successfully',
+  };
+}
+
 
   private extractPublicId(url: string): string {
     const parts = url.split('/');

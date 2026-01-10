@@ -10,6 +10,9 @@ import {
   Query,
   ParseIntPipe,
   HttpStatus,
+  Delete,
+  ParseUUIDPipe,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -33,7 +36,6 @@ import { UpdateNotificationSettingsDto } from 'src/notification/dto/update-notif
 @ApiTags('Vendor')
 @Controller('vendor')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('VENDOR')
 @ApiBearerAuth('JWT-auth')
 export class VendorController {
   constructor(
@@ -43,7 +45,35 @@ export class VendorController {
 
   // ==================== PROFILE MANAGEMENT ====================
 
+  @Delete('delete-vendor')  // The DELETE route is "/vendor/delete-vendor"
+  @Roles('ADMIN')
+  @ApiOperation({
+    summary: 'Delete vendor profile',
+    description: 'Deletes the vendor profile and associated data.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Vendor deleted successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Vendor not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Forbidden: Only vendors can be deleted',
+  })
+  async deleteProfile(
+    @Query('vendorId') vendorId: string
+  ) {
+    console.log('deleteVendorProfile route hit');
+    return this.vendorService.deleteVendorProfile(vendorId);
+  }
+
+
+
   @Get('profile')
+  @Roles('VENDOR')
   @ApiOperation({
     summary: 'Get vendor profile',
     description:
@@ -79,6 +109,7 @@ export class VendorController {
   }
 
   @Put('profile')
+  @Roles('VENDOR')
   @UseInterceptors(FileInterceptor('photo'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
@@ -133,9 +164,13 @@ export class VendorController {
     return this.vendorService.updateVendorProfile(userId, dto, photo);
   }
 
+
+  
+
   // ==================== TRANSACTION MANAGEMENT ====================
 
   @Get('transactions')
+  @Roles('VENDOR')
   @ApiOperation({
     summary: 'Get transaction history',
     description:
@@ -202,6 +237,7 @@ export class VendorController {
   }
 
   @Get('transactions/stats')
+  @Roles('VENDOR')
   @ApiOperation({
     summary: 'Get transaction statistics',
     description:
@@ -232,6 +268,7 @@ export class VendorController {
   // ==================== NOTIFICATION SETTINGS ====================
 
   @Get('notification-settings')
+  @Roles('VENDOR')
   @ApiOperation({
     summary: 'Get notification settings',
     description:
@@ -258,6 +295,7 @@ export class VendorController {
   }
 
   @Put('notification-settings')
+  @Roles('VENDOR')
   @ApiOperation({
     summary: 'Update notification settings',
     description:
