@@ -251,13 +251,21 @@ export class AdminController {
 
 
   @Get("get-all-campaign-analytics")
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['RUNNING', 'PAUSED', 'COMPLETED'],
+    description: 'Filter by campaign status',
+  })
   async getAllCampaignAnaltics(
     @Query("page") page: string,
-    @Query("limit") limit: string
+    @Query("limit") limit: string,
+    @Query("status") status?: string,
   ) {
 
     try {
-      const result = await this.adminService.getAllCampaignAnalytics(Number(page) || 1, Number(limit) || 20);
+      const filterStatus = status ? { status } : {};
+      const result = await this.adminService.getAllCampaignAnalytics(Number(page) || 1, Number(limit) || 20, filterStatus);
 
       return {
         success: true,
@@ -271,26 +279,27 @@ export class AdminController {
 
   }
 
-  @Get("get-all-campaign-analytics")
-  async deleteCampaign(
-    @Query("page") page: string,
-    @Query("limit") limit: string
-  ) {
+  // @Get("get-all-campaign-analytics")
+  // async deleteCampaign(
+  //   @Query("page") page: string,
+  //   @Query("limit") limit: string
+  // ) {
 
-    try {
-      const result = await this.adminService.getAllCampaignAnalytics(Number(page) || 1, Number(limit) || 20);
+  //   try {
+  //     const filterStatus = status ? { status } : {};
+  //     const result = await this.adminService.getAllCampaignAnalytics(Number(page) || 1, Number(limit) || 20, filterStatus);
 
-      return {
-        success: true,
-        message: "All Campaign Retrived successfully",
-        data: result
-      }
+  //     return {
+  //       success: true,
+  //       message: "All Campaign Retrived successfully",
+  //       data: result
+  //     }
 
-    } catch (error) {
-      throw error
-    }
+  //   } catch (error) {
+  //     throw error
+  //   }
 
-  }
+  // }
 
 
 
