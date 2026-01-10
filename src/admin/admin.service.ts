@@ -149,20 +149,20 @@ export class AdminService {
 
     }
 
-    
-    async getAllCampain(page: number, limit: number,filters: { status?: string } = {},) {
+
+    async getAllCampain(page: number, limit: number, filters: { status?: string } = {},) {
 
         const skip = (page - 1) * limit;
 
         const where: any = {};
-        if (filters.status) where.status = filters.status; 
+        if (filters.status) where.status = filters.status;
 
         const totalCampaings = await this.Prisma.campaign.count({ where });
 
         const campaings = await this.Prisma.campaign.findMany({
             skip,
             take: limit,
-            where, 
+            where,
             orderBy: {
                 createdAt: "desc",
             },
@@ -174,7 +174,7 @@ export class AdminService {
                         fullName: true,
                         email: true,
                         photo: true,
-                    
+
                     },
                 },
                 _count: {
@@ -1137,67 +1137,88 @@ export class AdminService {
     };
 
     async updateCampaignStatus(campaignId: string) {
-        const result = await this.Prisma.campaign.update({
-            where: {
-                campaignId: campaignId
-            },
+        // First, get the current campaign status
+        const campaign = await this.Prisma.campaign.findUnique({
+            where: { campaignId },
+            select: { status: true }, // only need status
+        });
+
+        if (!campaign) {
+            throw new Error("Campaign not found");
+        }
+
+        // Determine the new status
+        let newStatus: CampaignStatus;
+        if (campaign.status === "PAUSED") {
+            newStatus = "RUNNING";
+        } else if (campaign.status === "RUNNING") {
+            newStatus = "PAUSED";
+        } else {
+            // Optional: if other status, you can either throw or leave unchanged
+            newStatus = campaign.status;
+        }
+
+        // Update the campaign
+        const updated = await this.Prisma.campaign.update({
+            where: { campaignId },
             data: {
-                status: "PAUSED"
+                status: newStatus,
             }
         });
 
-        return result;
+        return updated;
     }
 
-    async banUser(userId: string) {
-    // Find the user by their userId and update their status to 'BANNED'
-    const result = await this.Prisma.user.update({
-        where: {
-            userId: userId,  // Assuming 'userId' is the unique identifier for users in the database
-        },
-        data: {
-            activeStatus: "BANNED",  // Update the activeStatus to 'BANNED'
-        },
-    });
 
-    // Optionally, you can return the result (updated user details) or some confirmation message
-    return result;  // This will return the updated user object
-}
+    async banUser(userId: string) {
+        // Find the user by their userId and update their status to 'BANNED'
+        const result = await this.Prisma.user.update({
+            where: {
+                userId: userId,  // Assuming 'userId' is the unique identifier for users in the database
+            },
+            data: {
+                activeStatus: "BANNED",  // Update the activeStatus to 'BANNED'
+            },
+        });
+
+        // Optionally, you can return the result (updated user details) or some confirmation message
+        return result;  // This will return the updated user object
+    }
 
     async getAllbannedUserByAdmin(page: number, limit: number) {
-    // Count the total number of banned users
-    const count = await this.Prisma.user.count({
-        where: {
-            activeStatus: "BANNED"
-        }
-    });
+        // Count the total number of banned users
+        const count = await this.Prisma.user.count({
+            where: {
+                activeStatus: "BANNED"
+            }
+        });
 
-    // If no banned users are found, throw an exception
-    if (count === 0) throw new NotFoundException("User Not Found");
+        // If no banned users are found, throw an exception
+        if (count === 0) throw new NotFoundException("User Not Found");
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
-    const totalPage = Math.ceil(count / limit);
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+        const totalPage = Math.ceil(count / limit);
 
-    // Fetch the actual data
-    const result = await this.Prisma.user.findMany({
-        where: {
-            activeStatus: "BANNED"
-        },
-        take: limit,
-        skip: skip
-    });
+        // Fetch the actual data
+        const result = await this.Prisma.user.findMany({
+            where: {
+                activeStatus: "BANNED"
+            },
+            take: limit,
+            skip: skip
+        });
 
-    // Return paginated response
-    const data = {
-        currentPage: page,   // Corrected typo
-        limit: limit,
-        totalPage,
-        data: result
-    };
+        // Return paginated response
+        const data = {
+            currentPage: page,   // Corrected typo
+            limit: limit,
+            totalPage,
+            data: result
+        };
 
-    return data;
-}
+        return data;
+    }
 
 
     async getSingleBannedUserAlsoReport(userId: string) {

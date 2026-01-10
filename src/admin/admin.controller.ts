@@ -48,7 +48,6 @@ export class AdminController {
     enum: ['RUNNING', 'PAUSED', 'COMPLETED'],
     description: 'Filter by campaign status',
   })
-
   async getAllCampaign(
     @Query("page") page?: string,
     @Query("limit") limit?: string,
@@ -57,7 +56,7 @@ export class AdminController {
 
     try {
       const filterStatus = status ? { status } : {};
-      const result = await this.adminService.getAllCampain(Number(page) || 1, Number(limit) || 20, { status });
+      const result = await this.adminService.getAllCampain(Number(page) || 1, Number(limit) || 20, filterStatus);
 
       return {
         success: true,
@@ -172,9 +171,8 @@ export class AdminController {
 
   @Patch("flagCampaign/:campainId")
   async updateCampaignFlag(
-    @Param("campainId") campainId: string
+    @Param("campainId") campainId: string,
   ) {
-
     const result = await this.adminService.updateCampaignStatus(campainId);
 
     return {
