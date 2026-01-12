@@ -926,7 +926,7 @@ export class CampaignController {
   }
 
   @Delete(':campaignId')
-  @Roles('VENDOR')
+  // @Roles('VENDOR')
   @ApiOperation({
     summary: 'Delete campaign',
     description:
